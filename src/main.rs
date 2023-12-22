@@ -1,26 +1,33 @@
-use std::{env, path::Path, fs, error::Error, convert};
+use std::{convert, env, error::Error, fs, path::Path};
 
-use quote::{quote, TokenStreamExt};
 use proc_macro2::{Ident, Span, TokenStream};
+use quote::{quote, TokenStreamExt};
 
-use rust_fit::profile_types::{read_types, convert_types, FitType};
+use rust_fit::fit_record::read_fit;
+use rust_fit::profile_types::{convert_types, read_types, FitType};
 use syn::LitInt;
+
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
 
 mod fit_blah {
     pub struct FitBlah(i32);
     pub const FIT_BLAH_0: FitBlah = FitBlah(0);
     pub const FIT_BLAH_1: FitBlah = FitBlah(1);
-
 }
-
 
 fn generate_code_type(fit_type: &FitType) -> TokenStream {
     let enum_name = Ident::new(&fit_type.name, Span::call_site());
 
-    let value_names = fit_type.values.iter()
+    let value_names = fit_type
+        .values
+        .iter()
         .map(|x| Ident::new(&format!("{}_{}", fit_type.name, x.name), Span::call_site()));
 
-    let values = fit_type.values.iter()
+    let values = fit_type
+        .values
+        .iter()
         .map(|x| LitInt::new(&x.value, Span::call_site()));
 
     let mut enum_values = vec![];
@@ -65,13 +72,11 @@ fn generate_code_types(fit_types: &[FitType]) {
     let mut token = TokenStream::new();
     token.append_all(tokens);
 
-
     // let token = quote! {
     //     #(#tokens),*
     // };
 
-
-     println!("{}", token);
+    println!("{}", token);
 
     let syntax_tree = syn::parse2(token).unwrap();
     let formatted = prettyplease::unparse(&syntax_tree);
@@ -81,13 +86,24 @@ fn generate_code_types(fit_types: &[FitType]) {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let types_csv = read_types("./fit-profile-types.csv")?;
-    let types = convert_types(&types_csv)?;
-    generate_code_types(&types);
+    // let types_csv = read_types("./fit-profile-types.csv")?;
+    // let types = convert_types(&types_csv)?;
+    // generate_code_types(&types);
 
     // for t in &types {
     //     println!("{:?}", t);
     // }
+
+    let args: Vec<String> = env::args().collect();
+    
+    let file = File::open(&args[1])?;
+    let mut reader = BufReader::new(file);
+
+    let fit = read_fit(&mut reader)?;
+
+    let json = serde_json::to_string(&fit)?;
+
+    println!("{}", json);
 
     Ok(())
 }

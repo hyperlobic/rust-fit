@@ -1,12 +1,12 @@
 use anyhow::anyhow;
+use std::io::BufReader;
 use std::mem;
 use std::{error::Error, fs::File};
-use std::io::BufReader;
 
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-pub struct FitTypeCsv   {
+pub struct FitTypeCsv {
     #[serde(rename = "Type Name")]
     pub name: Option<String>,
     #[serde(rename = "Base Type")]
@@ -16,7 +16,7 @@ pub struct FitTypeCsv   {
     #[serde(rename = "Value")]
     pub value: Option<String>,
     #[serde(rename = "Comment")]
-    pub comment: Option<String>
+    pub comment: Option<String>,
 }
 
 impl FitTypeCsv {
@@ -26,7 +26,7 @@ impl FitTypeCsv {
             base_type: Some(base_type.to_string()),
             value: None,
             value_name: None,
-            comment: None
+            comment: None,
         }
     }
 
@@ -36,7 +36,7 @@ impl FitTypeCsv {
             base_type: None,
             value: Some(value.to_string()),
             value_name: Some(value_name.to_string()),
-            comment: comment.map(|s| s.to_string())
+            comment: comment.map(|s| s.to_string()),
         }
     }
 }
@@ -45,14 +45,14 @@ impl FitTypeCsv {
 pub struct FitType {
     pub name: String,
     pub base_type: String,
-    pub values: Vec<FitTypeValue>
+    pub values: Vec<FitTypeValue>,
 }
 
 #[derive(Debug)]
 pub struct FitTypeValue {
     pub name: String,
     pub value: String,
-    pub comment: String
+    pub comment: String,
 }
 
 pub fn read_types(path: &str) -> Result<Vec<FitTypeCsv>, Box<dyn Error>> {
@@ -84,34 +84,40 @@ pub fn convert_types(csv_types: &Vec<FitTypeCsv>) -> Result<Vec<FitType>, anyhow
             curr_fit_type = Some(csv_type);
         } else {
             let value = FitTypeValue {
-                name: csv_type.value_name.as_ref()
+                name: csv_type
+                    .value_name
+                    .as_ref()
                     .ok_or(anyhow!("missing value name"))?
                     .to_owned(),
-                value: csv_type.value.as_ref()
+                value: csv_type
+                    .value
+                    .as_ref()
                     .ok_or(anyhow!("missing value"))?
                     .trim()
                     //.parse::<i32>()?
                     .to_owned(),
-                comment: csv_type.comment.as_ref()
+                comment: csv_type
+                    .comment
+                    .as_ref()
                     .unwrap_or(&"".to_string())
-                    .to_owned()
+                    .to_owned(),
             };
 
             curr_fit_type_values.push(value);
         }
-        
+
         if it.peek().is_some_and(|x| x.name.is_some()) || it.peek().is_none() {
             if let Some(cft) = curr_fit_type {
                 let fit_type = FitType {
-                    name: cft.name.as_ref()
-                        .unwrap()
-                        .to_owned(),
-                    base_type: cft.base_type.as_ref()
+                    name: cft.name.as_ref().unwrap().to_owned(),
+                    base_type: cft
+                        .base_type
+                        .as_ref()
                         .ok_or(anyhow!("missing base type"))?
                         .to_owned(),
-                    values: mem::take(&mut curr_fit_type_values)//curr_fit_type_values.drain(..).collect()
+                    values: mem::take(&mut curr_fit_type_values), //curr_fit_type_values.drain(..).collect()
                 };
-                
+
                 fit_types.push(fit_type);
             }
         }
