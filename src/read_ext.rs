@@ -110,8 +110,7 @@ pub trait ReadExt: Read + Seek {
         Ok(result)
     }
 
-    fn read_string_null_term(&mut self, size: u32) -> Result<String, std::io::Error> {
-        //let mut buf = vec![0u8; size as usize];
+    fn read_string_null_term(&mut self) -> Result<String, std::io::Error> {
         let mut buf = [0u8; 1];
         let mut str = String::new();
 

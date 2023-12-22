@@ -350,7 +350,7 @@ pub fn read_definition_message<T: Read + Seek>(reader: &mut T) -> Result<Definit
     }
 
     let _reserved = reader.read_u8()?;
-    let architecture = reader.read_u8().map(|b| ByteOrder::try_from(b))??;
+    let architecture = reader.read_u8().map(ByteOrder::try_from)??;
     
     let global_msg_number = reader.read_u16(architecture)?;
 
@@ -457,7 +457,7 @@ fn read_data_field<T: Read + Seek>(reader: &mut T, field_def: &FieldDefinition, 
             DataField::Byte(reader.read_u8()?),
         (Byte, true) => 
             DataField::ByteArray(read_array(data_size, || reader.read_u8())?),
-        (String, _) => DataField::String(reader.read_string_null_term(data_size as u32)?),
+        (String, _) => DataField::String(reader.read_string_null_term()?),
     };
 
     Ok(data)
@@ -514,13 +514,11 @@ pub fn read_fit<T: Read + Seek>(reader: &mut T) -> Result<Fit, anyhow::Error> {
             if let Some(replaced_def) = replaced {
                 definitions.push(replaced_def);
             }
+        } else if let Some(definition) = curr_defintions.get(&record_header.local_msg_type()) {
+            let data_mesg = read_data_mesg(reader, definition)?;
+            data.push(data_mesg);
         } else {
-            if let Some(ref definition) = curr_defintions.get(&record_header.local_msg_type()) {
-                let data_mesg = read_data_mesg(reader, &definition)?;
-                data.push(data_mesg);
-            } else {
-                Err(anyhow!("data mesg without preceding definition pos {} {:x}", record_header.local_msg_type(), reader.stream_position().unwrap_or(0)))?
-            }
+            Err(anyhow!("data mesg without preceding definition pos {} {:x}", record_header.local_msg_type(), reader.stream_position().unwrap_or(0)))?
         }
 
         if reader.stream_position()? == header.mesg_size() {
@@ -562,7 +560,7 @@ mod test {
 
         assert_eq!(mesg.header.msg_type(), MessageType::Definition);
         assert_eq!(mesg.header.local_msg_type(), 0);
-        assert_eq!(mesg.header.is_normal(), true);
+        assert!(mesg.header.is_normal());
         assert_eq!(mesg.content.architecture, ByteOrder::LitteEndian);
         assert_eq!(mesg.content.fields.len(), 4);
         

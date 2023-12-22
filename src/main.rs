@@ -1,14 +1,14 @@
-use std::{convert, env, error::Error, fs, path::Path};
+use std::{env, error::Error, fs, path::Path};
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, TokenStreamExt};
 
 use rust_fit::fit_record::read_fit;
-use rust_fit::profile_types::{convert_types, read_types, FitType};
+use rust_fit::profile_types::{FitType};
 use syn::LitInt;
 
 use std::fs::File;
-use std::io::prelude::*;
+
 use std::io::BufReader;
 
 mod fit_blah {

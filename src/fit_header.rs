@@ -50,7 +50,7 @@ pub fn read_fit_header<T: Read + Seek>(reader: &mut T) -> Result<FitHeader, anyh
         protocol_version,
         profile_version,
         data_size,
-        data_type: data_type,
+        data_type,
         crc,
     })
 }
@@ -86,7 +86,7 @@ pub fn read_header(reader: &mut impl Read) -> Result<FitHeader, anyhow::Error> {
         protocol_version,
         profile_version,
         data_size,
-        data_type: data_type,
+        data_type,
         crc,
     })
 }
