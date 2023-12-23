@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::io::{Read, Seek};
-use crate::{read_ext::ReadExt, byte_order::ByteOrder};
+use crate::{stream_reader::StreamReader, byte_order::ByteOrder};
 
 #[derive(Default, Debug, Serialize)]
 pub struct FitHeader {
@@ -18,7 +18,7 @@ impl FitHeader {
     }
 }
 
-pub fn read_fit_header<T: Read + Seek>(reader: &mut T) -> Result<FitHeader, anyhow::Error> {
+pub fn read_fit_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitHeader, anyhow::Error> {
     let header_size = reader.read_u8()?;
     let mut extra = if header_size > 14 {
         header_size - 14
@@ -30,10 +30,6 @@ pub fn read_fit_header<T: Read + Seek>(reader: &mut T) -> Result<FitHeader, anyh
     let profile_version = reader.read_u16(ByteOrder::LitteEndian)?;
     let data_size = reader.read_u32(ByteOrder::LitteEndian)?;
     let data_type = reader.read_string_fixed(4)?;
-
-    // let mut data_type = [0u8; 4];
-    // reader.read_exact(&mut data_type)?;
-
     let crc = if header_size >= 14 {
         reader.read_u16(ByteOrder::LitteEndian)?
     } else {
@@ -55,7 +51,7 @@ pub fn read_fit_header<T: Read + Seek>(reader: &mut T) -> Result<FitHeader, anyh
     })
 }
 
-pub fn read_header(reader: &mut impl Read) -> Result<FitHeader, anyhow::Error> {
+pub fn read_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitHeader, anyhow::Error> {
     let mut contents = [0; 14];
 
     reader.read_exact(&mut contents[..=11])?;
@@ -102,16 +98,12 @@ mod test {
         ];
 
         use std::io::Cursor;
-        let mut buff = Cursor::new(&header_bytes);
+        let mut reader = StreamReader::new(Cursor::new(&header_bytes));
 
-        let header = read_fit_header(&mut buff).unwrap();
+        let header = read_fit_header(&mut reader).unwrap();
 
         assert_eq!(header.header_size, 14);
         assert_eq!(header.data_type, ".FIT");
-        // assert_eq!(header.data_type[0], '.' as u8);
-        // assert_eq!(header.data_type[1], 'F' as u8);
-        // assert_eq!(header.data_type[2], 'I' as u8);
-        // assert_eq!(header.data_type[3], 'T' as u8);
         assert_eq!(header.data_size, 2248);
         assert_eq!(header.crc, 0x0191);
     }
@@ -123,17 +115,12 @@ mod test {
         ];
 
         use std::io::Cursor;
-        let mut buff = Cursor::new(&header_bytes);
+        let mut reader = StreamReader::new(Cursor::new(&header_bytes));
 
-        let header = read_fit_header(&mut buff).unwrap();
+        let header = read_fit_header(&mut reader).unwrap();
 
         assert_eq!(header.header_size, 12);
         assert_eq!(header.data_type, ".FIT");
-
-        // assert_eq!(header.data_type[0], '.' as u8);
-        // assert_eq!(header.data_type[1], 'F' as u8);
-        // assert_eq!(header.data_type[2], 'I' as u8);
-        // assert_eq!(header.data_type[3], 'T' as u8);
         assert_eq!(header.data_size, 2248);
         assert_eq!(header.crc, 0)
     }

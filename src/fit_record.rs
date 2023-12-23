@@ -1,8 +1,7 @@
 use anyhow::anyhow;
 use serde::Serialize;
 use std::{io::{Read, Seek}, collections::HashMap, mem};
-use crate::fit_header::{FitHeader, read_fit_header};
-use crate::read_ext::ReadExt;
+use crate::{fit_header::{FitHeader, read_fit_header}, stream_reader::StreamReader};
 use crate::byte_order::ByteOrder;
 
 const HEADER_TYPE_BIT: u8         = 0b10000000;
@@ -58,106 +57,106 @@ mod base_type_nums {
 }
 
 impl BaseType {
-    fn meta(&self) -> FitBaseType {
+    fn meta(&self) -> &FitBaseType {
         use BaseType::*;
         match self {
-            Enum => FitBaseType {
+            Enum => &FitBaseType {
                 base_type: base_type_nums::ENUM,
                 type_name: "enum",
                 invalid_value: 0xFF,
                 size: 1
             },
-            SInt8 => FitBaseType { 
+            SInt8 => &FitBaseType { 
                 base_type: base_type_nums::SINT8, 
                 type_name: "sint8",
                 invalid_value: 0x7F,
                 size: 1
             },
-            UInt8 => FitBaseType {
+            UInt8 => &FitBaseType {
                 base_type: base_type_nums::UINT8,
                 type_name: "uint8",
                 invalid_value: 0xFF,
                 size: 1
             },
-            UInt8z => FitBaseType {
+            UInt8z => &FitBaseType {
                 base_type: base_type_nums::UINT8Z,
                 type_name: "uint8z",
                 invalid_value: 0,
                 size: 1
             },
-            SInt16 => FitBaseType {
+            SInt16 => &FitBaseType {
                 base_type: base_type_nums::SINT16,
                 type_name: "sint16",
                 invalid_value: 0x7FFF,
                 size: 2
             },
-            UInt16 => FitBaseType {
+            UInt16 => &FitBaseType {
                 base_type: base_type_nums::UINT16,
                 type_name: "uint16",
                 invalid_value: 0xFFFF,
                 size: 2
             },
-            UInt16z => FitBaseType {
+            UInt16z => &FitBaseType {
                 base_type: base_type_nums::UINT16Z,
                 type_name: "uint16z",
                 invalid_value: 0,
                 size: 2
             },
-            SInt32 => FitBaseType { 
+            SInt32 => &FitBaseType { 
                 base_type: base_type_nums::SINT32,
                 type_name: "sint32",
                 invalid_value: 0x7FFFFFFF,
                 size: 4
             },
-            UInt32 => FitBaseType {
+            UInt32 => &FitBaseType {
                 base_type: base_type_nums::UINT32,
                 type_name: "uint32",
                 invalid_value: 0xFFFFFFFF,
                 size: 4
             },
-            UInt32z => FitBaseType {
+            UInt32z => &FitBaseType {
                 base_type: base_type_nums::UINT32Z,
                 type_name: "uint32z",
                 invalid_value: 0,
                 size: 4
             },
-            Float32 => FitBaseType {
+            Float32 => &FitBaseType {
                 base_type: base_type_nums::FLOAT32,
                 type_name: "float32",
                 invalid_value: 0xFFFFFFFF,
                 size: 4
             },
-            Float64 => FitBaseType {
+            Float64 => &FitBaseType {
                 base_type: base_type_nums::FLOAT64,
                 type_name: "float64",
                 invalid_value: 0xFFFFFFFFFFFFFFFF,
                 size: 8
             },
-            SInt64 => FitBaseType {
+            SInt64 => &FitBaseType {
                 base_type: base_type_nums::SINT64,
                 type_name: "sint64",
                 invalid_value: 0x7FFFFFFFFFFFFFFF,
                 size: 8
             },
-            UInt64 => FitBaseType {
+            UInt64 => &FitBaseType {
                 base_type: base_type_nums::UINT64,
                 type_name: "uint64",
                 invalid_value: 0,
                 size: 8
             },
-            UInt64z => FitBaseType {
+            UInt64z => &FitBaseType {
                 base_type: base_type_nums::UINT64Z,
                 type_name: "uint64z",
                 invalid_value: 0,
                 size: 8
             },
-            Byte => FitBaseType {
+            Byte => &FitBaseType {
                 base_type: base_type_nums::BYTE,
                 type_name: "byte",
                 invalid_value: 0xFF,
                 size: 1
             },
-            String => FitBaseType {
+            String => &FitBaseType {
                 base_type: base_type_nums::STRING,
                 type_name: "string",
                 invalid_value: 0,
@@ -327,12 +326,12 @@ pub struct Fit {
     pub data: Vec<DataMessage>,
 }
 
-fn read_message_header<T: Read + Seek>(reader: &mut T) -> Result<RecordHeader, anyhow::Error> {
+fn read_message_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<RecordHeader, anyhow::Error> {
     let header_byte = reader.read_u8()?;
     Ok(RecordHeader(header_byte))
 }
 
-fn read_field_definition<T: Read + Seek>(reader: &mut T) -> Result<FieldDefinition, anyhow::Error> {
+fn read_field_definition<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FieldDefinition, anyhow::Error> {
     let num = reader.read_u8()?;
     let size = reader.read_u8()?;
     let base_type = reader.read_u8()?;
@@ -340,7 +339,7 @@ fn read_field_definition<T: Read + Seek>(reader: &mut T) -> Result<FieldDefiniti
     Ok(FieldDefinition { num, size, base_type })
 }
 
-pub fn read_definition_message<T: Read + Seek>(reader: &mut T) -> Result<DefinitionMessage, anyhow::Error> {
+pub fn read_definition_message<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<DefinitionMessage, anyhow::Error> {
     let header_byte = reader.read_u8()?;
     eprintln!("read definition mesg {:x} {:x}", reader.stream_position()? - 1, header_byte);
     let header = RecordHeader(header_byte);
@@ -395,13 +394,13 @@ pub fn read_definition_message<T: Read + Seek>(reader: &mut T) -> Result<Definit
 fn read_array<T>(size: usize, mut read: impl FnMut() -> Result<T, std::io::Error>) -> Result<Vec<T>, anyhow::Error> {
     let type_size = mem::size_of::<T>();
     let count = size / type_size;
-    let buf: Result<Vec<T>, _> = (0..count)
+    let buf = (0..count)
         .map(|_| read())
-        .collect();
-    Ok(buf?)
+        .collect::<Result<Vec<T>, _>>()?;
+    Ok(buf)
 }
 
-fn read_data_field<T: Read + Seek>(reader: &mut T, field_def: &FieldDefinition, byte_order: ByteOrder) -> Result<DataField, anyhow::Error> {
+fn read_data_field<T: Read + Seek>(reader: &mut StreamReader<T>, field_def: &FieldDefinition, byte_order: ByteOrder) -> Result<DataField, anyhow::Error> {
     use BaseType::*;
     
     let data_size = field_def.size as usize;
@@ -409,7 +408,7 @@ fn read_data_field<T: Read + Seek>(reader: &mut T, field_def: &FieldDefinition, 
     let is_array = field_def.size > base_type.meta().size;
 
     let data = match (base_type, is_array) {
-        (Enum, false) => 
+        (Enum, false) =>
             DataField::Enum(reader.read_u8()?),
         (Enum, true) =>
             DataField::EnumArray(read_array(data_size, || reader.read_u8())?),
@@ -463,13 +462,13 @@ fn read_data_field<T: Read + Seek>(reader: &mut T, field_def: &FieldDefinition, 
     Ok(data)
 }
 
-fn read_developer_data_field<T: Read + Seek>(reader: &mut T, dev_field_def: &DeveloperDataField) -> Result<DataField, anyhow::Error> {
+fn read_developer_data_field<T: Read + Seek>(reader: &mut StreamReader<T>, dev_field_def: &DeveloperDataField) -> Result<DataField, anyhow::Error> {
     let mut buf = vec![0u8; dev_field_def.size as usize];
     reader.read_exact(buf.as_mut_slice())?;
     Ok(DataField::ByteArray(buf))
 }
 
-pub fn read_data_mesg<T: Read + Seek>(reader: &mut T, definition: &DefinitionMessage) -> Result<DataMessage, anyhow::Error> {
+pub fn read_data_mesg<T: Read + Seek>(reader: &mut StreamReader<T>, definition: &DefinitionMessage) -> Result<DataMessage, anyhow::Error> {
     let header = read_message_header(reader)?;
     eprintln!("read data mesg {:x} {:x}", reader.stream_position()?  - 1, header.0);
 
@@ -477,28 +476,28 @@ pub fn read_data_mesg<T: Read + Seek>(reader: &mut T, definition: &DefinitionMes
         Err(anyhow!("not a data message"))?
     }
 
-    let fields: Result<HashMap<u8, DataField>, anyhow::Error> = definition.content.fields.iter()
+    let fields = definition.content.fields.iter()
         .map(|field_def| {
             read_data_field(reader, field_def, definition.content.architecture)
                 .map(|field| (field_def.num, field))
         })
-        .collect();
+        .collect::<Result<HashMap<u8, DataField>, _>>()?;
 
-    let dev_fields: Result<HashMap<(u8, u8), DataField>, anyhow::Error> = definition.content.developer_fields.iter()
+    let dev_fields = definition.content.developer_fields.iter()
         .map(|dev_field_def| {
             read_developer_data_field(reader, dev_field_def)
                 .map(|field| ((dev_field_def.num, dev_field_def.index), field))
         })
-        .collect();
+        .collect::<Result<HashMap<(u8, u8), DataField>, _>>()?;
 
     Ok(DataMessage {
         header,
-        fields: fields?,
-        dev_fields: dev_fields?
+        fields,
+        dev_fields
     })
 }
 
-pub fn read_fit<T: Read + Seek>(reader: &mut T) -> Result<Fit, anyhow::Error> {
+pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<Fit, anyhow::Error> {
     let header = read_fit_header(reader)?;
 
     let mut definitions: Vec<DefinitionMessage> = vec![];
@@ -554,7 +553,7 @@ mod test {
         ];
 
         use std::io::Cursor;
-        let mut buff = Cursor::new(&data);
+        let mut buff = StreamReader::new(Cursor::new(&data));
 
         let mesg = read_definition_message(&mut buff).unwrap();
 
@@ -580,9 +579,9 @@ mod test {
         ];
 
         use std::io::Cursor;
-        let mut buff = Cursor::new(&data);
+        let mut reader = StreamReader::new(Cursor::new(&data));
 
-        let mesg = read_definition_message(&mut buff).unwrap();
+        let mesg = read_definition_message(&mut reader).unwrap();
 
         assert_eq!(mesg.content.developer_fields.len(), 1);
         assert_eq!(mesg.content.developer_fields[0].num, 0);
@@ -629,9 +628,9 @@ mod test {
         };
 
         use std::io::Cursor;
-        let mut buff = Cursor::new(&data);
+        let mut reader = StreamReader::new(Cursor::new(&data));
 
-        let mesg = read_data_mesg(&mut buff, &definition_mesg).unwrap();
+        let mesg = read_data_mesg(&mut reader, &definition_mesg).unwrap();
 
         assert!(mesg.header.is_data());
         assert_eq!(mesg.fields.len(), 4);
@@ -666,9 +665,9 @@ mod test {
         ];
 
         use std::io::Cursor;
-        let mut buff = Cursor::new(&data);
+        let mut reader = StreamReader::new(Cursor::new(&data));
 
-        let fit = read_fit(&mut buff).unwrap();
+        let fit = read_fit(&mut reader).unwrap();
 
         assert_eq!(fit.definitions.len(), 3);
         assert_eq!(fit.data.len(), 16);
@@ -692,9 +691,9 @@ mod test {
     ];
 
         use std::io::Cursor;
-        let mut buff = Cursor::new(&data);
+        let mut reader = StreamReader::new(Cursor::new(&data));
 
-        let fit = read_fit(&mut buff).unwrap();
+        let fit = read_fit(&mut reader).unwrap();
 
         assert_eq!(fit.definitions.len(), 4);
         assert_eq!(fit.data.len(), 6);
