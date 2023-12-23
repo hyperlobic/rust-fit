@@ -17,8 +17,8 @@ use self::record_header::RecordHeader;
 pub mod base_type {
     use anyhow::anyhow;
 
-    pub struct FitBaseType {
-        pub base_type: u8,
+    pub struct BaseTypeInfo {
+        pub base_type_num: u8,
         pub type_name: &'static str,
         pub invalid_value: u64,
         pub size: u8,
@@ -66,107 +66,107 @@ pub mod base_type {
     }
 
     impl BaseType {
-        pub fn meta(&self) -> &FitBaseType {
+        pub fn info(&self) -> &BaseTypeInfo {
             use BaseType::*;
             match self {
-                Enum => &FitBaseType {
-                    base_type: base_type_nums::ENUM,
+                Enum => &BaseTypeInfo {
+                    base_type_num: base_type_nums::ENUM,
                     type_name: "enum",
                     invalid_value: 0xFF,
                     size: 1,
                 },
-                SInt8 => &FitBaseType {
-                    base_type: base_type_nums::SINT8,
+                SInt8 => &BaseTypeInfo {
+                    base_type_num: base_type_nums::SINT8,
                     type_name: "sint8",
                     invalid_value: 0x7F,
                     size: 1,
                 },
-                UInt8 => &FitBaseType {
-                    base_type: base_type_nums::UINT8,
+                UInt8 => &BaseTypeInfo {
+                    base_type_num: base_type_nums::UINT8,
                     type_name: "uint8",
                     invalid_value: 0xFF,
                     size: 1,
                 },
-                UInt8z => &FitBaseType {
-                    base_type: base_type_nums::UINT8Z,
+                UInt8z => &BaseTypeInfo {
+                    base_type_num: base_type_nums::UINT8Z,
                     type_name: "uint8z",
                     invalid_value: 0,
                     size: 1,
                 },
-                SInt16 => &FitBaseType {
-                    base_type: base_type_nums::SINT16,
+                SInt16 => &BaseTypeInfo {
+                    base_type_num: base_type_nums::SINT16,
                     type_name: "sint16",
                     invalid_value: 0x7FFF,
                     size: 2,
                 },
-                UInt16 => &FitBaseType {
-                    base_type: base_type_nums::UINT16,
+                UInt16 => &BaseTypeInfo {
+                    base_type_num: base_type_nums::UINT16,
                     type_name: "uint16",
                     invalid_value: 0xFFFF,
                     size: 2,
                 },
-                UInt16z => &FitBaseType {
-                    base_type: base_type_nums::UINT16Z,
+                UInt16z => &BaseTypeInfo {
+                    base_type_num: base_type_nums::UINT16Z,
                     type_name: "uint16z",
                     invalid_value: 0,
                     size: 2,
                 },
-                SInt32 => &FitBaseType {
-                    base_type: base_type_nums::SINT32,
+                SInt32 => &BaseTypeInfo {
+                    base_type_num: base_type_nums::SINT32,
                     type_name: "sint32",
                     invalid_value: 0x7FFFFFFF,
                     size: 4,
                 },
-                UInt32 => &FitBaseType {
-                    base_type: base_type_nums::UINT32,
+                UInt32 => &BaseTypeInfo {
+                    base_type_num: base_type_nums::UINT32,
                     type_name: "uint32",
                     invalid_value: 0xFFFFFFFF,
                     size: 4,
                 },
-                UInt32z => &FitBaseType {
-                    base_type: base_type_nums::UINT32Z,
+                UInt32z => &BaseTypeInfo {
+                    base_type_num: base_type_nums::UINT32Z,
                     type_name: "uint32z",
                     invalid_value: 0,
                     size: 4,
                 },
-                Float32 => &FitBaseType {
-                    base_type: base_type_nums::FLOAT32,
+                Float32 => &BaseTypeInfo {
+                    base_type_num: base_type_nums::FLOAT32,
                     type_name: "float32",
                     invalid_value: 0xFFFFFFFF,
                     size: 4,
                 },
-                Float64 => &FitBaseType {
-                    base_type: base_type_nums::FLOAT64,
+                Float64 => &BaseTypeInfo {
+                    base_type_num: base_type_nums::FLOAT64,
                     type_name: "float64",
                     invalid_value: 0xFFFFFFFFFFFFFFFF,
                     size: 8,
                 },
-                SInt64 => &FitBaseType {
-                    base_type: base_type_nums::SINT64,
+                SInt64 => &BaseTypeInfo {
+                    base_type_num: base_type_nums::SINT64,
                     type_name: "sint64",
                     invalid_value: 0x7FFFFFFFFFFFFFFF,
                     size: 8,
                 },
-                UInt64 => &FitBaseType {
-                    base_type: base_type_nums::UINT64,
+                UInt64 => &BaseTypeInfo {
+                    base_type_num: base_type_nums::UINT64,
                     type_name: "uint64",
                     invalid_value: 0,
                     size: 8,
                 },
-                UInt64z => &FitBaseType {
-                    base_type: base_type_nums::UINT64Z,
+                UInt64z => &BaseTypeInfo {
+                    base_type_num: base_type_nums::UINT64Z,
                     type_name: "uint64z",
                     invalid_value: 0,
                     size: 8,
                 },
-                Byte => &FitBaseType {
-                    base_type: base_type_nums::BYTE,
+                Byte => &BaseTypeInfo {
+                    base_type_num: base_type_nums::BYTE,
                     type_name: "byte",
                     invalid_value: 0xFF,
                     size: 1,
                 },
-                String => &FitBaseType {
-                    base_type: base_type_nums::STRING,
+                String => &BaseTypeInfo {
+                    base_type_num: base_type_nums::STRING,
                     type_name: "string",
                     invalid_value: 0,
                     size: 1,
@@ -207,8 +207,8 @@ pub mod base_type {
 }
 
 pub mod record_header {
-    use serde::Serialize;
     use bits::*;
+    use serde::Serialize;
 
     use super::MessageType;
 
@@ -223,8 +223,7 @@ pub mod record_header {
         pub const LOCAL_MESSAGE_TYPE_BITS: u8 = 0b00001111;
     }
 
-    impl RecordHeader {   
-
+    impl RecordHeader {
         pub fn is_normal(&self) -> bool {
             self.0 & HEADER_TYPE_BIT == 0
         }
@@ -438,7 +437,7 @@ fn read_data_field<T: Read + Seek>(
 
     let data_size = field_def.size as usize;
     let base_type: BaseType = field_def.base_type.try_into()?;
-    let is_array = field_def.size > base_type.meta().size;
+    let is_array = field_def.size > base_type.info().size;
 
     let data = match (base_type, is_array) {
         (Enum, false) => DataField::Enum(reader.read_u8()?),
@@ -567,13 +566,14 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<Fit, any
 
 #[cfg(test)]
 mod test {
+    use std::io::Cursor;
+    use super::{base_type::BaseTypeInfo, *};
     use crate::record::base_type::base_type_nums;
-    use super::{*, base_type::FitBaseType};
 
-    fn assert_field_type(field_def: &FieldDefinition, num: u8, base_type: &FitBaseType) {
+    fn assert_field_type(field_def: &FieldDefinition, num: u8, base_type: &BaseTypeInfo) {
         assert_eq!(field_def.num, num);
         assert_eq!(field_def.size, base_type.size);
-        assert_eq!(field_def.base_type, base_type.base_type);
+        assert_eq!(field_def.base_type, base_type.base_type_num);
     }
 
     #[test]
@@ -582,7 +582,6 @@ mod test {
             0x40, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x01, 0x00, 0x01, 0x02, 0x84, 0x02, 0x02, 0x84, 0x04, 0x04, 0x86,
         ];
 
-        use std::io::Cursor;
         let mut buff = StreamReader::new(Cursor::new(&data));
 
         let mesg = read_definition_message(&mut buff).unwrap();
@@ -593,10 +592,10 @@ mod test {
         assert_eq!(mesg.content.architecture, ByteOrder::LitteEndian);
         assert_eq!(mesg.content.fields.len(), 4);
 
-        assert_field_type(&mesg.content.fields[0], 0, &BaseType::Enum.meta());
-        assert_field_type(&mesg.content.fields[1], 1, &BaseType::UInt16.meta());
-        assert_field_type(&mesg.content.fields[2], 2, &BaseType::UInt16.meta());
-        assert_field_type(&mesg.content.fields[3], 4, &BaseType::UInt32.meta());
+        assert_field_type(&mesg.content.fields[0], 0, &BaseType::Enum.info());
+        assert_field_type(&mesg.content.fields[1], 1, &BaseType::UInt16.info());
+        assert_field_type(&mesg.content.fields[2], 2, &BaseType::UInt16.info());
+        assert_field_type(&mesg.content.fields[3], 4, &BaseType::UInt32.info());
 
         assert_eq!(mesg.content.developer_fields.len(), 0);
     }
@@ -608,7 +607,6 @@ mod test {
             0x86, 0x01, 0x00, 0x02, 0x01,
         ];
 
-        use std::io::Cursor;
         let mut reader = StreamReader::new(Cursor::new(&data));
 
         let mesg = read_definition_message(&mut reader).unwrap();
@@ -633,29 +631,28 @@ mod test {
                     FieldDefinition {
                         base_type: base_type_nums::ENUM,
                         num: 0,
-                        size: BaseType::Enum.meta().size,
+                        size: BaseType::Enum.info().size,
                     },
                     FieldDefinition {
                         base_type: base_type_nums::UINT16,
                         num: 1,
-                        size: BaseType::UInt16.meta().size,
+                        size: BaseType::UInt16.info().size,
                     },
                     FieldDefinition {
                         base_type: base_type_nums::UINT16,
                         num: 2,
-                        size: BaseType::UInt16.meta().size,
+                        size: BaseType::UInt16.info().size,
                     },
                     FieldDefinition {
                         base_type: base_type_nums::UINT32,
                         num: 3,
-                        size: BaseType::UInt32.meta().size,
+                        size: BaseType::UInt32.info().size,
                     },
                 ],
                 developer_fields: vec![],
             },
         };
 
-        use std::io::Cursor;
         let mut reader = StreamReader::new(Cursor::new(&data));
 
         let mesg = read_data_mesg(&mut reader, &definition_mesg).unwrap();
@@ -690,7 +687,6 @@ mod test {
             0x02, 0x00, 0x00, 0x70, 0x01, 0xB8, 0xCC,
         ];
 
-        use std::io::Cursor;
         let mut reader = StreamReader::new(Cursor::new(&data));
 
         let fit = read_fit(&mut reader).unwrap();
@@ -714,7 +710,6 @@ mod test {
             0x80, 0x8E, 0x40, 0x02, 0x00, 0x90, 0x5C, 0x00, 0x05, 0xA9, 0x38, 0x8A, 0x10, 0x03, 0xD3, 0x9E,
         ];
 
-        use std::io::Cursor;
         let mut reader = StreamReader::new(Cursor::new(&data));
 
         let fit = read_fit(&mut reader).unwrap();
