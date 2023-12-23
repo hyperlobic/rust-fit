@@ -1,12 +1,12 @@
-use std::{env, error::Error};
-use rust_fit::fit_record::read_fit;
+use rust_fit::record::read_fit;
 use rust_fit::stream_reader::StreamReader;
 use std::fs::File;
 use std::io::BufReader;
+use std::{env, error::Error};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
-    
+
     let file = File::open(&args[1])?;
     let mut reader = StreamReader::new(BufReader::new(file));
 

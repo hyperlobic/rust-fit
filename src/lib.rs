@@ -1,5 +1,5 @@
 pub mod byte_order;
-pub mod stream_reader;
-pub mod fit_header;
-pub mod fit_record;
+pub mod file_header;
+pub mod record;
 pub mod profile_types;
+pub mod stream_reader;

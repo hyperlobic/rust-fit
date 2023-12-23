@@ -94,13 +94,8 @@ pub fn convert_types(csv_types: &Vec<FitTypeCsv>) -> Result<Vec<FitType>, anyhow
                     .as_ref()
                     .ok_or(anyhow!("missing value"))?
                     .trim()
-                    //.parse::<i32>()?
                     .to_owned(),
-                comment: csv_type
-                    .comment
-                    .as_ref()
-                    .unwrap_or(&"".to_string())
-                    .to_owned(),
+                comment: csv_type.comment.as_ref().unwrap_or(&"".to_string()).to_owned(),
             };
 
             curr_fit_type_values.push(value);
@@ -110,11 +105,7 @@ pub fn convert_types(csv_types: &Vec<FitTypeCsv>) -> Result<Vec<FitType>, anyhow
             if let Some(cft) = curr_fit_type {
                 let fit_type = FitType {
                     name: cft.name.as_ref().unwrap().to_owned(),
-                    base_type: cft
-                        .base_type
-                        .as_ref()
-                        .ok_or(anyhow!("missing base type"))?
-                        .to_owned(),
+                    base_type: cft.base_type.as_ref().ok_or(anyhow!("missing base type"))?.to_owned(),
                     values: mem::take(&mut curr_fit_type_values), //curr_fit_type_values.drain(..).collect()
                 };
 

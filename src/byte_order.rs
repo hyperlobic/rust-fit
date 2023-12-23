@@ -1,5 +1,5 @@
-use serde::Serialize;
 use anyhow::anyhow;
+use serde::Serialize;
 
 #[derive(PartialEq, Debug, Serialize, Copy, Clone)]
 pub enum ByteOrder {
@@ -14,8 +14,7 @@ impl TryFrom<u8> for ByteOrder {
         match value {
             0 => Ok(ByteOrder::LitteEndian),
             1 => Ok(ByteOrder::BigEndian),
-            _ => Err(anyhow!("invalid byte order value"))
+            _ => Err(anyhow!("invalid byte order value")),
         }
     }
 }
-

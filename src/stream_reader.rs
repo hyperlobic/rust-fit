@@ -1,8 +1,8 @@
-use std::io::{Read, Seek, SeekFrom};
 use crate::byte_order::ByteOrder;
+use std::io::{Read, Seek, SeekFrom};
 
 pub struct StreamReader<T: Read + Seek> {
-    reader: T
+    reader: T,
 }
 
 impl<T: Read + Seek> StreamReader<T> {
@@ -39,7 +39,7 @@ impl<T: Read + Seek> StreamReader<T> {
         Ok(buf[0] as i8)
     }
 
-    pub fn read_u16(&mut self, byte_order: ByteOrder) -> Result<u16, std::io::Error>  {
+    pub fn read_u16(&mut self, byte_order: ByteOrder) -> Result<u16, std::io::Error> {
         let mut buf = [0u8; 2];
         self.reader.read_exact(&mut buf)?;
 
@@ -51,7 +51,7 @@ impl<T: Read + Seek> StreamReader<T> {
         Ok(result)
     }
 
-    pub fn read_i16(&mut self, byte_order: ByteOrder) -> Result<i16, std::io::Error>  {
+    pub fn read_i16(&mut self, byte_order: ByteOrder) -> Result<i16, std::io::Error> {
         let mut buf = [0u8; 2];
         self.reader.read_exact(&mut buf)?;
 
@@ -63,7 +63,7 @@ impl<T: Read + Seek> StreamReader<T> {
         Ok(result)
     }
 
-    pub fn read_u32(&mut self, byte_order: ByteOrder) -> Result<u32, std::io::Error>  {
+    pub fn read_u32(&mut self, byte_order: ByteOrder) -> Result<u32, std::io::Error> {
         let mut buf = [0u8; 4];
         self.reader.read_exact(&mut buf)?;
 
@@ -75,7 +75,7 @@ impl<T: Read + Seek> StreamReader<T> {
         Ok(result)
     }
 
-    pub fn read_i32(&mut self, byte_order: ByteOrder) -> Result<i32, std::io::Error>  {
+    pub fn read_i32(&mut self, byte_order: ByteOrder) -> Result<i32, std::io::Error> {
         let mut buf = [0u8; 4];
         self.reader.read_exact(&mut buf)?;
 

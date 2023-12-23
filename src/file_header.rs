@@ -1,9 +1,9 @@
+use crate::{byte_order::ByteOrder, stream_reader::StreamReader};
 use serde::Serialize;
 use std::io::{Read, Seek};
-use crate::{stream_reader::StreamReader, byte_order::ByteOrder};
 
 #[derive(Default, Debug, Serialize)]
-pub struct FitHeader {
+pub struct FileHeader {
     pub header_size: u8,
     pub protocol_version: u8,
     pub profile_version: u16,
@@ -12,19 +12,15 @@ pub struct FitHeader {
     pub crc: u16,
 }
 
-impl FitHeader {
+impl FileHeader {
     pub fn mesg_size(&self) -> u64 {
         self.header_size as u64 + self.data_size as u64
     }
 }
 
-pub fn read_fit_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitHeader, anyhow::Error> {
+pub fn read_fit_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FileHeader, anyhow::Error> {
     let header_size = reader.read_u8()?;
-    let mut extra = if header_size > 14 {
-        header_size - 14
-    } else {
-        0
-    };
+    let mut extra = if header_size > 14 { header_size - 14 } else { 0 };
 
     let protocol_version = reader.read_u8()?;
     let profile_version = reader.read_u16(ByteOrder::LitteEndian)?;
@@ -41,7 +37,7 @@ pub fn read_fit_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<F
         extra -= 1;
     }
 
-    Ok(FitHeader {
+    Ok(FileHeader {
         header_size,
         protocol_version,
         profile_version,
@@ -51,7 +47,7 @@ pub fn read_fit_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<F
     })
 }
 
-pub fn read_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitHeader, anyhow::Error> {
+pub fn read_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FileHeader, anyhow::Error> {
     let mut contents = [0; 14];
 
     reader.read_exact(&mut contents[..=11])?;
@@ -77,7 +73,7 @@ pub fn read_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitHe
         0
     };
 
-    Ok(FitHeader {
+    Ok(FileHeader {
         header_size,
         protocol_version,
         profile_version,
@@ -110,9 +106,7 @@ mod test {
 
     #[test]
     fn test_read_12_byte_header() {
-        let header_bytes: [u8; 12] = [
-            0x0C, 0x10, 0x7D, 0x52, 0xC8, 0x08, 0x00, 0x00, 0x2E, 0x46, 0x49, 0x54,
-        ];
+        let header_bytes: [u8; 12] = [0x0C, 0x10, 0x7D, 0x52, 0xC8, 0x08, 0x00, 0x00, 0x2E, 0x46, 0x49, 0x54];
 
         use std::io::Cursor;
         let mut reader = StreamReader::new(Cursor::new(&header_bytes));
