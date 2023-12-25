@@ -16,6 +16,7 @@ use self::record_header::RecordHeader;
 
 pub mod base_type {
     use anyhow::anyhow;
+    use serde::Serialize;
 
     pub struct BaseTypeInfo {
         pub base_type_num: u8,
@@ -24,6 +25,7 @@ pub mod base_type {
         pub size: u8,
     }
 
+    #[derive(Debug, Serialize, PartialEq)]
     pub enum BaseType {
         Enum,
         SInt8,
@@ -186,9 +188,9 @@ pub mod base_type {
                 ENUM => Ok(Enum),
                 SINT8 => Ok(SInt8),
                 UINT8 => Ok(UInt8),
+                UINT8Z => Ok(UInt8z),
                 SINT16 => Ok(SInt16),
                 UINT16 => Ok(UInt16),
-                UINT8Z => Ok(UInt8z),
                 UINT16Z => Ok(UInt16z),
                 SINT32 => Ok(SInt32),
                 UINT32 => Ok(UInt32),
@@ -275,7 +277,7 @@ pub enum MessageType {
 pub struct FieldDefinition {
     pub num: u8,
     pub size: u8,
-    pub base_type: u8,
+    pub base_type: BaseType,
 }
 
 #[derive(Serialize, Debug)]
@@ -310,6 +312,7 @@ impl DefinitionMessage {
 #[derive(Serialize, Debug)]
 pub struct DataMessage {
     pub header: RecordHeader,
+    pub mesg_num: u16,
     pub fields: HashMap<u8, DataField>,
     #[serde(skip_serializing)]
     pub dev_fields: HashMap<(u8, u8), DataField>,
@@ -359,7 +362,7 @@ fn read_message_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<R
 fn read_field_definition<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FieldDefinition, anyhow::Error> {
     let num = reader.read_u8()?;
     let size = reader.read_u8()?;
-    let base_type = reader.read_u8()?;
+    let base_type: BaseType = reader.read_u8()?.try_into()?;
 
     Ok(FieldDefinition { num, size, base_type })
 }
@@ -436,7 +439,7 @@ fn read_data_field<T: Read + Seek>(
     use base_type::BaseType::*;
 
     let data_size = field_def.size as usize;
-    let base_type: BaseType = field_def.base_type.try_into()?;
+    let base_type = &field_def.base_type;
     let is_array = field_def.size > base_type.info().size;
 
     let data = match (base_type, is_array) {
@@ -517,6 +520,7 @@ pub fn read_data_mesg<T: Read + Seek>(
 
     Ok(DataMessage {
         header,
+        mesg_num: definition.content.global_msg_number,
         fields,
         dev_fields,
     })
@@ -527,25 +531,26 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<Fit, any
 
     let mut definitions: Vec<DefinitionMessage> = vec![];
     let mut data: Vec<DataMessage> = vec![];
-    let mut curr_defintions: HashMap<u8, DefinitionMessage> = HashMap::new();
+    let mut curr_definitions: HashMap<u8, DefinitionMessage> = HashMap::new();
 
     while let Ok(b) = reader.peek_byte() {
         let record_header = RecordHeader(b);
 
         if record_header.is_definition() {
             let def_mesg = read_definition_message(reader)?;
-            let replaced = curr_defintions.insert(def_mesg.header.local_msg_type(), def_mesg);
+            let replaced = curr_definitions.insert(def_mesg.header.local_msg_type(), def_mesg);
             if let Some(replaced_def) = replaced {
                 definitions.push(replaced_def);
             }
-        } else if let Some(definition) = curr_defintions.get(&record_header.local_msg_type()) {
+        } else if let Some(definition) = curr_definitions.get(&record_header.local_msg_type()) {
             let data_mesg = read_data_mesg(reader, definition)?;
             data.push(data_mesg);
         } else {
             Err(anyhow!(
-                "data mesg without preceding definition pos {} {:x}",
+                "data mesg without preceding definition pos {:x} {} {}",
+                reader.stream_position().unwrap_or(0),
+                record_header.0,
                 record_header.local_msg_type(),
-                reader.stream_position().unwrap_or(0)
             ))?
         }
 
@@ -555,7 +560,7 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<Fit, any
         }
     }
 
-    definitions.append(&mut curr_defintions.into_values().collect());
+    definitions.append(&mut curr_definitions.into_values().collect());
 
     Ok(Fit {
         header,
@@ -567,13 +572,12 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<Fit, any
 #[cfg(test)]
 mod test {
     use std::io::Cursor;
-    use super::{base_type::BaseTypeInfo, *};
-    use crate::record::base_type::base_type_nums;
+    use super::*;
 
-    fn assert_field_type(field_def: &FieldDefinition, num: u8, base_type: &BaseTypeInfo) {
+    fn assert_field_type(field_def: &FieldDefinition, num: u8, base_type: &BaseType) {
         assert_eq!(field_def.num, num);
-        assert_eq!(field_def.size, base_type.size);
-        assert_eq!(field_def.base_type, base_type.base_type_num);
+        assert_eq!(field_def.base_type, *base_type);
+        assert_eq!(field_def.size, base_type.info().size);
     }
 
     #[test]
@@ -592,10 +596,10 @@ mod test {
         assert_eq!(mesg.content.architecture, ByteOrder::LitteEndian);
         assert_eq!(mesg.content.fields.len(), 4);
 
-        assert_field_type(&mesg.content.fields[0], 0, &BaseType::Enum.info());
-        assert_field_type(&mesg.content.fields[1], 1, &BaseType::UInt16.info());
-        assert_field_type(&mesg.content.fields[2], 2, &BaseType::UInt16.info());
-        assert_field_type(&mesg.content.fields[3], 4, &BaseType::UInt32.info());
+        assert_field_type(&mesg.content.fields[0], 0, &BaseType::Enum);
+        assert_field_type(&mesg.content.fields[1], 1, &BaseType::UInt16);
+        assert_field_type(&mesg.content.fields[2], 2, &BaseType::UInt16);
+        assert_field_type(&mesg.content.fields[3], 4, &BaseType::UInt32);
 
         assert_eq!(mesg.content.developer_fields.len(), 0);
     }
@@ -629,22 +633,22 @@ mod test {
                 num_fields: 4,
                 fields: vec![
                     FieldDefinition {
-                        base_type: base_type_nums::ENUM,
+                        base_type: BaseType::Enum,
                         num: 0,
                         size: BaseType::Enum.info().size,
                     },
                     FieldDefinition {
-                        base_type: base_type_nums::UINT16,
+                        base_type: BaseType::UInt16,
                         num: 1,
                         size: BaseType::UInt16.info().size,
                     },
                     FieldDefinition {
-                        base_type: base_type_nums::UINT16,
+                        base_type: BaseType::UInt16,
                         num: 2,
                         size: BaseType::UInt16.info().size,
                     },
                     FieldDefinition {
-                        base_type: base_type_nums::UINT32,
+                        base_type: BaseType::UInt32,
                         num: 3,
                         size: BaseType::UInt32.info().size,
                     },
