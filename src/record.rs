@@ -470,7 +470,7 @@ fn read_data_field<T: Read + Seek>(
         (Float64, true) => DataField::Float64Array(read_array(data_size, || reader.read_f64(byte_order))?),
         (Byte, false) => DataField::Byte(reader.read_u8()?),
         (Byte, true) => DataField::ByteArray(read_array(data_size, || reader.read_u8())?),
-        (String, _) => DataField::String(reader.read_string_null_term()?),
+        (String, _) => DataField::String(reader.read_string_null_term(data_size)?),
     };
 
     Ok(data)

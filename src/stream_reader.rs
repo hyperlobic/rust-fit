@@ -1,5 +1,5 @@
 use crate::byte_order::ByteOrder;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 pub struct StreamReader<T: Read + Seek> {
     reader: T,
@@ -135,16 +135,10 @@ impl<T: Read + Seek> StreamReader<T> {
         Ok(result)
     }
 
-    pub(crate) fn read_string_null_term(&mut self) -> Result<String, std::io::Error> {
-        let mut buf = [0u8; 1];
-        let mut str = String::new();
-
-        self.reader.read_exact(&mut buf)?;
-
-        while buf[0] != 0 {
-            str.push(buf[0].into());
-            self.reader.read_exact(&mut buf)?;
-        }
+    pub(crate) fn read_string_null_term(&mut self, size: usize) -> Result<String, anyhow::Error> {
+        let buf = self.reader.by_ref().bytes().take(size).collect::<Result<Vec<u8>, _>>()?;
+        let actual = buf.into_iter().take_while(|b| *b != 0).collect::<Vec<u8>>();
+        let str = String::from_utf8(actual)?;
 
         Ok(str)
     }
@@ -160,5 +154,61 @@ impl<T: Read + Seek> StreamReader<T> {
         }
 
         Ok(str)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::io::Cursor;
+
+
+    #[test]
+    fn read_string_null_term_should_read_a_string() {
+
+        let data: [u8; 11] = [
+            97, 98, 99, 100, 49, 50, 51, 52, 122, 113, 0
+        ];
+
+        let mut reader = StreamReader::new(Cursor::new(&data));
+
+        let str = reader.read_string_null_term(11).unwrap();
+        let pos = reader.stream_position().unwrap();
+
+        assert_eq!(str, "abcd1234zq");
+        assert_eq!(pos, 11);
+    }
+
+
+    #[test]
+    fn read_string_null_term_should_read_a_string_with_extra_nulls() {
+
+        let data: [u8; 13] = [
+            97, 98, 99, 100, 49, 50, 51, 52, 122, 113, 0, 0, 0
+        ];
+
+        let mut reader = StreamReader::new(Cursor::new(&data));
+
+        let str = reader.read_string_null_term(13).unwrap();
+        let pos = reader.stream_position().unwrap();
+
+        assert_eq!(str, "abcd1234zq");
+        assert_eq!(pos, 13);
+    }
+
+    #[test]
+    fn read_string_null_term_should_handle_empty_string() {
+
+        let data: [u8; 9] = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+
+        let mut reader = StreamReader::new(Cursor::new(&data));
+
+        let str = reader.read_string_null_term(9).unwrap();
+        let pos = reader.stream_position().unwrap();
+
+        assert_eq!(str, "");
+        assert_eq!(pos, 9);
     }
 }
