@@ -1,6 +1,6 @@
-use crate::base_type;
+use crate::base_type::BaseType;
 use crate::byte_order::ByteOrder;
-use crate::record::base_type::BaseType;
+use crate::profile::types::MesgNum;
 use crate::{
     file_header::{read_fit_header, FileHeader},
     stream_reader::StreamReader,
@@ -88,28 +88,28 @@ pub struct FieldDefinition {
 }
 
 #[derive(Serialize, Debug)]
-pub struct DeveloperDataField {
+pub struct DeveloperFieldDefinition {
     pub num: u8,
     pub size: u8,
     pub index: u8,
 }
 
 #[derive(Serialize, Debug)]
-pub struct DefinitionMessageContent {
+pub struct DefinitionMessage {
     pub architecture: ByteOrder,
     pub global_msg_number: u16,
     pub num_fields: u8,
     pub fields: Vec<FieldDefinition>,
-    pub developer_fields: Vec<DeveloperDataField>,
+    pub developer_fields: Vec<DeveloperFieldDefinition>,
 }
 
 #[derive(Serialize, Debug)]
-pub struct DefinitionMessage {
+pub struct DefinitionRecord {
     pub header: RecordHeader,
-    pub content: DefinitionMessageContent,
+    pub content: DefinitionMessage,
 }
 
-impl DefinitionMessage {
+impl DefinitionRecord {
     pub fn data_size(&self) -> u32 {
         self.content.fields.iter().map(|x| x.size as u32).sum::<u32>()
             + self.content.developer_fields.iter().map(|x| x.size as u32).sum::<u32>()
@@ -118,11 +118,9 @@ impl DefinitionMessage {
 
 #[derive(Serialize, Debug)]
 pub struct DataMessage {
-    pub header: RecordHeader,
-    pub mesg_num: u16,
+    pub mesg_num: MesgNum,
     pub fields: HashMap<u8, DataField>,
-    #[serde(skip_serializing)]
-    pub dev_fields: HashMap<(u8, u8), DataField>,
+    pub dev_fields: Vec<DeveloperDataField>,
 }
 
 #[derive(PartialEq, Debug, Serialize)]
@@ -154,10 +152,18 @@ pub enum DataField {
     String(String),
 }
 
+#[derive(Debug, Serialize)]
+pub struct DeveloperDataField {
+    pub num: u8,
+    pub index: u8,
+    pub data: DataField,
+}
+
 #[derive(Serialize, Debug)]
-pub struct Fit {
+pub struct FitFile {
     pub header: FileHeader,
     pub data: Vec<DataMessage>,
+    pub crc: u16,
 }
 
 fn read_message_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<RecordHeader, anyhow::Error> {
@@ -175,7 +181,7 @@ fn read_field_definition<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result
 
 pub fn read_definition_message<T: Read + Seek>(
     reader: &mut StreamReader<T>,
-) -> Result<DefinitionMessage, anyhow::Error> {
+) -> Result<DefinitionRecord, anyhow::Error> {
     let header_byte = reader.read_u8()?;
     eprintln!(
         "read definition mesg {:x} {:x}",
@@ -201,7 +207,7 @@ pub fn read_definition_message<T: Read + Seek>(
         fields.push(field_def);
     }
 
-    let mut developer_fields: Vec<DeveloperDataField> = vec![];
+    let mut developer_fields: Vec<DeveloperFieldDefinition> = vec![];
     if header.has_dev() {
         let num_developer_fields = reader.read_u8()?;
 
@@ -210,13 +216,13 @@ pub fn read_definition_message<T: Read + Seek>(
             let size = reader.read_u8()?;
             let index = reader.read_u8()?;
 
-            developer_fields.push(DeveloperDataField { num, size, index });
+            developer_fields.push(DeveloperFieldDefinition { num, size, index });
         }
     }
 
-    let mesg = DefinitionMessage {
+    let mesg = DefinitionRecord {
         header,
-        content: DefinitionMessageContent {
+        content: DefinitionMessage {
             architecture,
             global_msg_number,
             num_fields,
@@ -242,7 +248,7 @@ fn read_data_field<T: Read + Seek>(
     field_def: &FieldDefinition,
     byte_order: ByteOrder,
 ) -> Result<DataField, anyhow::Error> {
-    use base_type::BaseType::*;
+    use crate::base_type::BaseType::*;
 
     let data_size = field_def.size as usize;
     let base_type = &field_def.base_type;
@@ -287,7 +293,7 @@ fn read_data_field<T: Read + Seek>(
 
 fn read_developer_data_field<T: Read + Seek>(
     reader: &mut StreamReader<T>,
-    dev_field_def: &DeveloperDataField,
+    dev_field_def: &DeveloperFieldDefinition,
 ) -> Result<DataField, anyhow::Error> {
     let mut buf = vec![0u8; dev_field_def.size as usize];
     reader.read_exact(buf.as_mut_slice())?;
@@ -296,7 +302,7 @@ fn read_developer_data_field<T: Read + Seek>(
 
 pub fn read_data_mesg<T: Read + Seek>(
     reader: &mut StreamReader<T>,
-    definition: &DefinitionMessage,
+    definition: &DefinitionRecord,
 ) -> Result<DataMessage, anyhow::Error> {
     let header = read_message_header(reader)?;
     eprintln!("read data mesg {:x} {:x}", reader.stream_position()? - 1, header.0);
@@ -320,24 +326,28 @@ pub fn read_data_mesg<T: Read + Seek>(
         .iter()
         .map(|dev_field_def| {
             read_developer_data_field(reader, dev_field_def)
-                .map(|field| ((dev_field_def.num, dev_field_def.index), field))
+                .map(|field| 
+                    DeveloperDataField {
+                        num: dev_field_def.num, 
+                        index: dev_field_def.index,
+                        data: field
+                    })
         })
-        .collect::<Result<HashMap<(u8, u8), DataField>, _>>()?;
+        .collect::<Result<Vec<DeveloperDataField>, _>>()?;
 
     Ok(DataMessage {
-        header,
-        mesg_num: definition.content.global_msg_number,
+        mesg_num: definition.content.global_msg_number.into(),
         fields,
         dev_fields,
     })
 }
 
-pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<Fit, anyhow::Error> {
+pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitFile, anyhow::Error> {
     let header = read_fit_header(reader)?;
 
-    let mut definitions: Vec<DefinitionMessage> = vec![];
+    let mut definitions: Vec<DefinitionRecord> = vec![];
     let mut data: Vec<DataMessage> = vec![];
-    let mut curr_definitions: HashMap<u8, DefinitionMessage> = HashMap::new();
+    let mut curr_definitions: HashMap<u8, DefinitionRecord> = HashMap::new();
 
     while let Ok(b) = reader.peek_byte() {
         let record_header = RecordHeader(b);
@@ -368,9 +378,10 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<Fit, any
 
     definitions.append(&mut curr_definitions.into_values().collect());
 
-    Ok(Fit {
+    Ok(FitFile {
         header,
         data,
+        crc: reader.crc()
     })
 }
 
@@ -430,9 +441,9 @@ mod test {
     fn test_read_data_message() {
         let data: [u8; 10] = [0x00, 0x04, 0x0F, 0x00, 0x01, 0x00, 0x12, 0x07, 0xE6, 0x29];
 
-        let definition_mesg = DefinitionMessage {
+        let definition_mesg = DefinitionRecord {
             header: RecordHeader(0x40),
-            content: DefinitionMessageContent {
+            content: DefinitionMessage {
                 architecture: ByteOrder::LitteEndian,
                 global_msg_number: 0,
                 num_fields: 4,
@@ -466,7 +477,6 @@ mod test {
 
         let mesg = read_data_mesg(&mut reader, &definition_mesg).unwrap();
 
-        assert!(mesg.header.is_data());
         assert_eq!(mesg.fields.len(), 4);
         assert!(mesg.fields.get(&0).is_some());
         assert_eq!(mesg.fields[&0], DataField::Enum(0x04));

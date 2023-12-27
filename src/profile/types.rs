@@ -1,7 +1,8 @@
 /// Auto-generated, do not edit.
 use num_enum::FromPrimitive;
+use serde::Serialize;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum File {
     Device = 1,
     Settings = 2,
@@ -27,7 +28,7 @@ pub enum File {
     UnknownValue(u8),
 }
 #[repr(u16)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum MesgNum {
     FileId = 0,
     Capabilities = 1,
@@ -141,7 +142,7 @@ pub enum MesgNum {
 pub type Checksum = u8;
 pub type FileFlags = u8;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum MesgCount {
     NumPerFile = 0,
     MaxPerFile = 1,
@@ -154,7 +155,7 @@ pub type LocalDateTime = u32;
 pub type MessageIndex = u16;
 pub type DeviceIndex = u8;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Gender {
     Female = 0,
     Male = 1,
@@ -162,7 +163,7 @@ pub enum Gender {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Language {
     English = 0,
     French = 1,
@@ -212,7 +213,7 @@ pub type LanguageBits2 = u8;
 pub type LanguageBits3 = u8;
 pub type LanguageBits4 = u8;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum TimeZone {
     Almaty = 0,
     Bangkok = 1,
@@ -324,7 +325,7 @@ pub enum TimeZone {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DisplayMeasure {
     Metric = 0,
     Statute = 1,
@@ -333,7 +334,7 @@ pub enum DisplayMeasure {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DisplayHeart {
     Bpm = 0,
     Max = 1,
@@ -342,7 +343,7 @@ pub enum DisplayHeart {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DisplayPower {
     Watts = 0,
     PercentFtp = 1,
@@ -350,7 +351,7 @@ pub enum DisplayPower {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DisplayPosition {
     Degree = 0,
     DegreeMinute = 1,
@@ -398,7 +399,7 @@ pub enum DisplayPosition {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Switch {
     Off = 0,
     On = 1,
@@ -407,7 +408,7 @@ pub enum Switch {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Sport {
     Generic = 0,
     Running = 1,
@@ -478,7 +479,7 @@ pub type SportBits4 = u8;
 pub type SportBits5 = u8;
 pub type SportBits6 = u8;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SubSport {
     Generic = 0,
     Treadmill = 1,
@@ -569,7 +570,7 @@ pub enum SubSport {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SportEvent {
     Uncategorized = 0,
     Geocaching = 1,
@@ -584,7 +585,7 @@ pub enum SportEvent {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Activity {
     Manual = 0,
     AutoMultiSport = 1,
@@ -592,7 +593,7 @@ pub enum Activity {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Intensity {
     Active = 0,
     Rest = 1,
@@ -605,7 +606,7 @@ pub enum Intensity {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SessionTrigger {
     ActivityEnd = 0,
     Manual = 1,
@@ -615,7 +616,7 @@ pub enum SessionTrigger {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum AutolapTrigger {
     Time = 0,
     Distance = 1,
@@ -628,7 +629,7 @@ pub enum AutolapTrigger {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum LapTrigger {
     Manual = 0,
     Time = 1,
@@ -643,7 +644,7 @@ pub enum LapTrigger {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum TimeMode {
     Hour12 = 0,
     Hour24 = 1,
@@ -655,7 +656,7 @@ pub enum TimeMode {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum BacklightMode {
     Off = 0,
     Manual = 1,
@@ -668,7 +669,7 @@ pub enum BacklightMode {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DateMode {
     DayMonth = 0,
     MonthDay = 1,
@@ -677,7 +678,7 @@ pub enum DateMode {
 }
 pub type BacklightTimeout = u8;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Event {
     Timer = 0,
     Workout = 3,
@@ -729,7 +730,7 @@ pub enum Event {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum EventType {
     Start = 0,
     Stop = 1,
@@ -745,7 +746,7 @@ pub enum EventType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum TimerTrigger {
     Manual = 0,
     Auto = 1,
@@ -754,7 +755,7 @@ pub enum TimerTrigger {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum FitnessEquipmentState {
     Ready = 0,
     InUse = 1,
@@ -764,7 +765,7 @@ pub enum FitnessEquipmentState {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Tone {
     Off = 0,
     Tone = 1,
@@ -774,7 +775,7 @@ pub enum Tone {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Autoscroll {
     None = 0,
     Slow = 1,
@@ -784,7 +785,7 @@ pub enum Autoscroll {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum ActivityClass {
     Level = 0x7F,
     LevelMax = 100,
@@ -793,7 +794,7 @@ pub enum ActivityClass {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum HrZoneCalc {
     Custom = 0,
     PercentMaxHr = 1,
@@ -803,7 +804,7 @@ pub enum HrZoneCalc {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum PwrZoneCalc {
     Custom = 0,
     PercentFtp = 1,
@@ -811,7 +812,7 @@ pub enum PwrZoneCalc {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum WktStepDuration {
     Time = 0,
     Distance = 1,
@@ -848,7 +849,7 @@ pub enum WktStepDuration {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum WktStepTarget {
     Speed = 0,
     HeartRate = 1,
@@ -868,7 +869,7 @@ pub enum WktStepTarget {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Goal {
     Time = 0,
     Distance = 1,
@@ -881,7 +882,7 @@ pub enum Goal {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum GoalRecurrence {
     Off = 0,
     Daily = 1,
@@ -893,7 +894,7 @@ pub enum GoalRecurrence {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum GoalSource {
     Auto = 0,
     Community = 1,
@@ -902,7 +903,7 @@ pub enum GoalSource {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Schedule {
     Workout = 0,
     Course = 1,
@@ -910,7 +911,7 @@ pub enum Schedule {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum CoursePoint {
     Generic = 0,
     Summit = 1,
@@ -972,7 +973,7 @@ pub type Manufacturer = u16;
 pub type GarminProduct = u16;
 pub type AntplusDeviceType = u8;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum AntNetwork {
     Public = 0,
     Antplus = 1,
@@ -984,7 +985,7 @@ pub enum AntNetwork {
 pub type WorkoutCapabilities = u32;
 pub type BatteryStatus = u8;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum HrType {
     Normal = 0,
     Irregular = 1,
@@ -996,7 +997,7 @@ pub type Weight = u16;
 pub type WorkoutHr = u32;
 pub type WorkoutPower = u32;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum BpStatus {
     NoError = 0,
     ErrorIncompleteData = 1,
@@ -1008,7 +1009,7 @@ pub enum BpStatus {
 }
 pub type UserLocalId = u16;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SwimStroke {
     Freestyle = 0,
     Backstroke = 1,
@@ -1021,7 +1022,7 @@ pub enum SwimStroke {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum ActivityType {
     Generic = 0,
     Running = 1,
@@ -1036,7 +1037,7 @@ pub enum ActivityType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum ActivitySubtype {
     Generic = 0,
     Treadmill = 1,
@@ -1062,7 +1063,7 @@ pub enum ActivitySubtype {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum ActivityLevel {
     Low = 0,
     Medium = 1,
@@ -1071,7 +1072,7 @@ pub enum ActivityLevel {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Side {
     Right = 0,
     Left = 1,
@@ -1081,7 +1082,7 @@ pub enum Side {
 pub type LeftRightBalance = u8;
 pub type LeftRightBalance100 = u16;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum LengthType {
     Idle = 0,
     Active = 1,
@@ -1089,7 +1090,7 @@ pub enum LengthType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DayOfWeek {
     Sunday = 0,
     Monday = 1,
@@ -1103,7 +1104,7 @@ pub enum DayOfWeek {
 }
 pub type ConnectivityCapabilities = u32;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum WeatherReport {
     Current = 0,
     Forecast = 1,
@@ -1112,7 +1113,7 @@ pub enum WeatherReport {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum WeatherStatus {
     Clear = 0,
     PartlyCloudy = 1,
@@ -1139,7 +1140,7 @@ pub enum WeatherStatus {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum WeatherSeverity {
     Unknown = 0,
     Warning = 1,
@@ -1150,7 +1151,7 @@ pub enum WeatherSeverity {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum WeatherSevereType {
     Unspecified = 0,
     Tornado = 1,
@@ -1243,7 +1244,7 @@ pub enum WeatherSevereType {
 pub type TimeIntoDay = u32;
 pub type LocaltimeIntoDay = u32;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum StrokeType {
     NoEvent = 0,
     Other = 1,
@@ -1255,7 +1256,7 @@ pub enum StrokeType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum BodyLocation {
     LeftLeg = 0,
     LeftCalf = 1,
@@ -1301,7 +1302,7 @@ pub enum BodyLocation {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SegmentLapStatus {
     End = 0,
     Fail = 1,
@@ -1309,7 +1310,7 @@ pub enum SegmentLapStatus {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SegmentLeaderboardType {
     Overall = 0,
     PersonalBest = 1,
@@ -1326,7 +1327,7 @@ pub enum SegmentLeaderboardType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SegmentDeleteStatus {
     DoNotDelete = 0,
     DeleteOne = 1,
@@ -1335,7 +1336,7 @@ pub enum SegmentDeleteStatus {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SegmentSelectionType {
     Starred = 0,
     Suggested = 1,
@@ -1343,7 +1344,7 @@ pub enum SegmentSelectionType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SourceType {
     Ant = 0,
     Antplus = 1,
@@ -1358,7 +1359,7 @@ pub type LocalDeviceType = u8;
 pub type BleDeviceType = u8;
 pub type AntChannelId = u32;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DisplayOrientation {
     Auto = 0,
     Portrait = 1,
@@ -1369,7 +1370,7 @@ pub enum DisplayOrientation {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum WorkoutEquipment {
     None = 0,
     SwimFins = 1,
@@ -1381,7 +1382,7 @@ pub enum WorkoutEquipment {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum WatchfaceMode {
     Digital = 0,
     Analog = 1,
@@ -1391,7 +1392,7 @@ pub enum WatchfaceMode {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DigitalWatchfaceLayout {
     Traditional = 0,
     Modern = 1,
@@ -1400,7 +1401,7 @@ pub enum DigitalWatchfaceLayout {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum AnalogWatchfaceLayout {
     Minimal = 0,
     Traditional = 1,
@@ -1409,7 +1410,7 @@ pub enum AnalogWatchfaceLayout {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum RiderPositionType {
     Seated = 0,
     Standing = 1,
@@ -1419,7 +1420,7 @@ pub enum RiderPositionType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum PowerPhaseType {
     PowerPhaseStartAngle = 0,
     PowerPhaseEndAngle = 1,
@@ -1429,7 +1430,7 @@ pub enum PowerPhaseType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum CameraEventType {
     VideoStart = 0,
     VideoSplit = 1,
@@ -1448,7 +1449,7 @@ pub enum CameraEventType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SensorType {
     Accelerometer = 0,
     Gyroscope = 1,
@@ -1458,7 +1459,7 @@ pub enum SensorType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum BikeLightNetworkConfigType {
     Auto = 0,
     Individual = 4,
@@ -1469,7 +1470,7 @@ pub enum BikeLightNetworkConfigType {
 }
 pub type CommTimeoutType = u16;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum CameraOrientationType {
     CameraOrientation0 = 0,
     CameraOrientation90 = 1,
@@ -1479,7 +1480,7 @@ pub enum CameraOrientationType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum AttitudeStage {
     Failed = 0,
     Aligning = 1,
@@ -1490,7 +1491,7 @@ pub enum AttitudeStage {
 }
 pub type AttitudeValidity = u16;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum AutoSyncFrequency {
     Never = 0,
     Occasionally = 1,
@@ -1501,7 +1502,7 @@ pub enum AutoSyncFrequency {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum ExdLayout {
     FullScreen = 0,
     HalfVertical = 1,
@@ -1516,7 +1517,7 @@ pub enum ExdLayout {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum ExdDisplayType {
     Numerical = 0,
     Simple = 1,
@@ -1533,7 +1534,7 @@ pub enum ExdDisplayType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum ExdDataUnits {
     NoUnits = 0,
     Laps = 1,
@@ -1589,7 +1590,7 @@ pub enum ExdDataUnits {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum ExdQualifiers {
     NoQualifier = 0,
     Instantaneous = 1,
@@ -1639,7 +1640,7 @@ pub enum ExdQualifiers {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum ExdDescriptors {
     BikeLightBatteryStatus = 0,
     BeamAngleStatus = 1,
@@ -1745,7 +1746,7 @@ pub type AutoActivityDetect = u32;
 pub type SupportedExdScreenLayouts = u32;
 pub type FitBaseType = u8;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum TurnType {
     ArrivingIdx = 0,
     ArrivingLeftIdx = 1,
@@ -1792,7 +1793,7 @@ pub type BikeLightBeamAngleMode = u8;
 pub type FitBaseUnit = u16;
 pub type SetType = u8;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum MaxMetCategory {
     Generic = 0,
     Cycling = 1,
@@ -1834,7 +1835,7 @@ pub type TricepsExtensionExerciseName = u16;
 pub type WarmUpExerciseName = u16;
 pub type RunExerciseName = u16;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum WaterType {
     Fresh = 0,
     Salt = 1,
@@ -1844,14 +1845,14 @@ pub enum WaterType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum TissueModelType {
     Zhl16c = 0,
     #[num_enum(catch_all)]
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DiveGasStatus {
     Disabled = 0,
     Enabled = 1,
@@ -1860,7 +1861,7 @@ pub enum DiveGasStatus {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DiveAlert {
     NdlReached = 0,
     GasSwitchPrompted = 1,
@@ -1905,7 +1906,7 @@ pub enum DiveAlert {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DiveAlarmType {
     Depth = 0,
     Time = 1,
@@ -1914,7 +1915,7 @@ pub enum DiveAlarmType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DiveBacklightMode {
     AtDepth = 0,
     AlwaysOn = 1,
@@ -1922,7 +1923,7 @@ pub enum DiveBacklightMode {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SleepLevel {
     Unmeasurable = 0,
     Awake = 1,
@@ -1933,7 +1934,7 @@ pub enum SleepLevel {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum Spo2MeasurementType {
     OffWrist = 0,
     SpotCheck = 1,
@@ -1943,7 +1944,7 @@ pub enum Spo2MeasurementType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum CcrSetpointSwitchMode {
     Manual = 0,
     Automatic = 1,
@@ -1951,7 +1952,7 @@ pub enum CcrSetpointSwitchMode {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum DiveGasMode {
     OpenCircuit = 0,
     ClosedCircuitDiluent = 1,
@@ -1960,7 +1961,7 @@ pub enum DiveGasMode {
 }
 pub type FaveroProduct = u16;
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum SplitType {
     AscentSplit = 1,
     DescentSplit = 2,
@@ -1987,7 +1988,7 @@ pub enum SplitType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum ClimbProEvent {
     Approach = 0,
     Start = 1,
@@ -1996,7 +1997,7 @@ pub enum ClimbProEvent {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum GasConsumptionRateType {
     PressureSac = 0,
     VolumeSac = 1,
@@ -2005,7 +2006,7 @@ pub enum GasConsumptionRateType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum TapSensitivity {
     High = 0,
     Medium = 1,
@@ -2014,7 +2015,7 @@ pub enum TapSensitivity {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum RadarThreatLevelType {
     ThreatUnknown = 0,
     ThreatNone = 1,
@@ -2024,7 +2025,7 @@ pub enum RadarThreatLevelType {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum MaxMetSpeedSource {
     OnboardGps = 0,
     ConnectedGps = 1,
@@ -2033,7 +2034,7 @@ pub enum MaxMetSpeedSource {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum MaxMetHeartRateSource {
     Whr = 0,
     Hrm = 1,
@@ -2041,7 +2042,7 @@ pub enum MaxMetHeartRateSource {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum HrvStatus {
     None = 0,
     Poor = 1,
@@ -2052,7 +2053,7 @@ pub enum HrvStatus {
     UnknownValue(u8),
 }
 #[repr(u8)]
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive)]
 pub enum NoFlyTimeMode {
     Standard = 0,
     Flat24Hours = 1,

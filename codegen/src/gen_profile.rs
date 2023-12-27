@@ -71,7 +71,7 @@ pub fn generate_enum_code_type(fit_type: &FitType) -> TokenStream {
 
     let token = quote! {
         #[repr(#type_name)]
-        #[derive(Debug, FromPrimitive)]
+        #[derive(Debug, Serialize, FromPrimitive)]
         pub enum #enum_name {
             #(#enum_values),*,
             #[num_enum(catch_all)]
@@ -108,6 +108,7 @@ pub fn generate_code_types(fit_types: &[FitType], output_file: &str) {
     tokens.push(quote! {
         /// Auto-generated, do not edit.
         use num_enum::FromPrimitive;
+        use serde::Serialize;
     });
 
     tokens.extend(fit_types.iter().map(generate_code_type).filter_map(|s| s));

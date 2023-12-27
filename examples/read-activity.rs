@@ -1,4 +1,4 @@
-use rust_fit::profile_types::{File as FitFile, MesgNum, Sport};
+use rust_fit::profile::types::{File as FileType, MesgNum, Sport};
 use rust_fit::record::{read_fit, DataField};
 use rust_fit::stream_reader::StreamReader;
 use std::fs::File;
@@ -20,11 +20,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let fit = read_fit(&mut reader)?;
 
     for mesg in fit.data {
-        let mesg_type: MesgNum = mesg.mesg_num.into();
-        match mesg_type {
+        match mesg.mesg_num {
             MesgNum::FileId => {
                 if let Some(DataField::Enum(file_field)) = mesg.fields.get(&0) {
-                    let file = FitFile::from(*file_field);
+                    let file = FileType::from(*file_field);
                     println!("File mesg: type = {:?}", file);
                 } else {
                     println!("no file type defined");
