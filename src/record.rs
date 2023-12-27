@@ -362,7 +362,7 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<Fit, any
 
         if reader.stream_position()? == header.mesg_size() {
             // read crc
-            reader.read_i16(ByteOrder::LitteEndian)?;
+            reader.read_crc()?;
         }
     }
 
@@ -501,6 +501,7 @@ mod test {
         let fit = read_fit(&mut reader).unwrap();
 
         assert_eq!(fit.data.len(), 16);
+        assert_eq!(reader.crc(), 0xCCB8)
     }
 
     #[test]
@@ -523,5 +524,7 @@ mod test {
         let fit = read_fit(&mut reader).unwrap();
 
         assert_eq!(fit.data.len(), 6);
+        assert_eq!(reader.crc(), 0x9ED3);
+
     }
 }
