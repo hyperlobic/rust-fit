@@ -157,7 +157,6 @@ pub enum DataField {
 #[derive(Serialize, Debug)]
 pub struct Fit {
     pub header: FileHeader,
-    pub definitions: Vec<DefinitionMessage>,
     pub data: Vec<DataMessage>,
 }
 
@@ -371,7 +370,6 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<Fit, any
 
     Ok(Fit {
         header,
-        definitions,
         data,
     })
 }
@@ -502,7 +500,6 @@ mod test {
 
         let fit = read_fit(&mut reader).unwrap();
 
-        assert_eq!(fit.definitions.len(), 3);
         assert_eq!(fit.data.len(), 16);
     }
 
@@ -525,7 +522,6 @@ mod test {
 
         let fit = read_fit(&mut reader).unwrap();
 
-        assert_eq!(fit.definitions.len(), 4);
         assert_eq!(fit.data.len(), 6);
     }
 }
