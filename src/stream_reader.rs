@@ -1,5 +1,5 @@
 use crate::byte_order::ByteOrder;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom};
 
 pub struct StreamReader<T: Read + Seek> {
     reader: T,
@@ -136,7 +136,12 @@ impl<T: Read + Seek> StreamReader<T> {
     }
 
     pub(crate) fn read_string_null_term(&mut self, size: usize) -> Result<String, anyhow::Error> {
-        let buf = self.reader.by_ref().bytes().take(size).collect::<Result<Vec<u8>, _>>()?;
+        let buf = self
+            .reader
+            .by_ref()
+            .bytes()
+            .take(size)
+            .collect::<Result<Vec<u8>, _>>()?;
         let actual = buf.into_iter().take_while(|b| *b != 0).collect::<Vec<u8>>();
         let str = String::from_utf8(actual)?;
 
@@ -162,13 +167,9 @@ mod test {
     use super::*;
     use std::io::Cursor;
 
-
     #[test]
     fn read_string_null_term_should_read_a_string() {
-
-        let data: [u8; 11] = [
-            97, 98, 99, 100, 49, 50, 51, 52, 122, 113, 0
-        ];
+        let data: [u8; 11] = [97, 98, 99, 100, 49, 50, 51, 52, 122, 113, 0];
 
         let mut reader = StreamReader::new(Cursor::new(&data));
 
@@ -179,13 +180,9 @@ mod test {
         assert_eq!(pos, 11);
     }
 
-
     #[test]
     fn read_string_null_term_should_read_a_string_with_extra_nulls() {
-
-        let data: [u8; 13] = [
-            97, 98, 99, 100, 49, 50, 51, 52, 122, 113, 0, 0, 0
-        ];
+        let data: [u8; 13] = [97, 98, 99, 100, 49, 50, 51, 52, 122, 113, 0, 0, 0];
 
         let mut reader = StreamReader::new(Cursor::new(&data));
 
@@ -198,10 +195,7 @@ mod test {
 
     #[test]
     fn read_string_null_term_should_handle_empty_string() {
-
-        let data: [u8; 9] = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ];
+        let data: [u8; 9] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 
         let mut reader = StreamReader::new(Cursor::new(&data));
 

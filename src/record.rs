@@ -571,8 +571,8 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<Fit, any
 
 #[cfg(test)]
 mod test {
-    use std::io::Cursor;
     use super::*;
+    use std::io::Cursor;
 
     fn assert_field_type(field_def: &FieldDefinition, num: u8, base_type: &BaseType) {
         assert_eq!(field_def.num, num);
