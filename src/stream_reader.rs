@@ -11,10 +11,9 @@ impl<T: Read + Seek> StreamReader<T> {
         Self { reader, crc: 0 }
     }
 
-    const CRC_TABLE: [u16; 16] =
-    [
-       0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,
-       0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400
+    const CRC_TABLE: [u16; 16] = [
+        0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401, 0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01,
+        0x8801, 0x4400,
     ];
 
     fn update_crc(&mut self, bytes: &[u8]) {
@@ -22,7 +21,7 @@ impl<T: Read + Seek> StreamReader<T> {
             let mut tmp = Self::CRC_TABLE[(self.crc & 0xF) as usize];
             let mut crc = (self.crc >> 4) & 0x0FFF;
             crc = crc ^ tmp ^ Self::CRC_TABLE[(byte & 0xF) as usize];
-        
+
             // now compute checksum of upper four bits of byte
             tmp = Self::CRC_TABLE[(crc & 0xF) as usize];
             crc = (crc >> 4) & 0x0FFF;
@@ -40,7 +39,7 @@ impl<T: Read + Seek> StreamReader<T> {
 
         self.reader.read_exact(&mut buf)?;
         let crc = u16::from_le_bytes(buf);
-        
+
         if crc != self.crc {
             Err(std::io::Error::other("crc check failed"))?
         }
@@ -50,7 +49,7 @@ impl<T: Read + Seek> StreamReader<T> {
 
     pub(crate) fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), std::io::Error> {
         self.reader.read_exact(buf)?;
-        self.update_crc(&buf);
+        self.update_crc(buf);
         Ok(())
     }
 

@@ -166,7 +166,7 @@ pub struct FitFile {
     pub crc: u16,
 }
 
-fn read_message_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<RecordHeader, anyhow::Error> {
+fn read_record_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<RecordHeader, anyhow::Error> {
     let header_byte = reader.read_u8()?;
     Ok(RecordHeader(header_byte))
 }
@@ -179,9 +179,7 @@ fn read_field_definition<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result
     Ok(FieldDefinition { num, size, base_type })
 }
 
-pub fn read_definition_message<T: Read + Seek>(
-    reader: &mut StreamReader<T>,
-) -> Result<DefinitionRecord, anyhow::Error> {
+pub fn read_definition_record<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<DefinitionRecord, anyhow::Error> {
     let header_byte = reader.read_u8()?;
     eprintln!(
         "read definition mesg {:x} {:x}",
@@ -300,11 +298,11 @@ fn read_developer_data_field<T: Read + Seek>(
     Ok(DataField::ByteArray(buf))
 }
 
-pub fn read_data_mesg<T: Read + Seek>(
+pub fn read_data_record<T: Read + Seek>(
     reader: &mut StreamReader<T>,
     definition: &DefinitionRecord,
 ) -> Result<DataMessage, anyhow::Error> {
-    let header = read_message_header(reader)?;
+    let header = read_record_header(reader)?;
     eprintln!("read data mesg {:x} {:x}", reader.stream_position()? - 1, header.0);
 
     if !header.is_data() && !header.is_compressed() {
@@ -325,13 +323,11 @@ pub fn read_data_mesg<T: Read + Seek>(
         .developer_fields
         .iter()
         .map(|dev_field_def| {
-            read_developer_data_field(reader, dev_field_def)
-                .map(|field| 
-                    DeveloperDataField {
-                        num: dev_field_def.num, 
-                        index: dev_field_def.index,
-                        data: field
-                    })
+            read_developer_data_field(reader, dev_field_def).map(|field| DeveloperDataField {
+                num: dev_field_def.num,
+                index: dev_field_def.index,
+                data: field,
+            })
         })
         .collect::<Result<Vec<DeveloperDataField>, _>>()?;
 
@@ -353,13 +349,13 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitFile,
         let record_header = RecordHeader(b);
 
         if record_header.is_definition() {
-            let def_mesg = read_definition_message(reader)?;
+            let def_mesg = read_definition_record(reader)?;
             let replaced = curr_definitions.insert(def_mesg.header.local_msg_type(), def_mesg);
             if let Some(replaced_def) = replaced {
                 definitions.push(replaced_def);
             }
         } else if let Some(definition) = curr_definitions.get(&record_header.local_msg_type()) {
-            let data_mesg = read_data_mesg(reader, definition)?;
+            let data_mesg = read_data_record(reader, definition)?;
             data.push(data_mesg);
         } else {
             Err(anyhow!(
@@ -381,7 +377,7 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitFile,
     Ok(FitFile {
         header,
         data,
-        crc: reader.crc()
+        crc: reader.crc(),
     })
 }
 
@@ -397,14 +393,14 @@ mod test {
     }
 
     #[test]
-    fn test_read_file_definition_message() {
+    fn test_read_file_definition_record() {
         let data: [u8; 0x12] = [
             0x40, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x01, 0x00, 0x01, 0x02, 0x84, 0x02, 0x02, 0x84, 0x04, 0x04, 0x86,
         ];
 
         let mut buff = StreamReader::new(Cursor::new(&data));
 
-        let mesg = read_definition_message(&mut buff).unwrap();
+        let mesg = read_definition_record(&mut buff).unwrap();
 
         assert_eq!(mesg.header.msg_type(), MessageType::Definition);
         assert_eq!(mesg.header.local_msg_type(), 0);
@@ -421,7 +417,7 @@ mod test {
     }
 
     #[test]
-    fn test_read_file_definition_message_with_dev_fields() {
+    fn test_read_file_definition_record_with_dev_fields() {
         let data: [u8; 0x16] = [
             0b01100000, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x01, 0x00, 0x01, 0x02, 0x84, 0x02, 0x02, 0x84, 0x04, 0x04,
             0x86, 0x01, 0x00, 0x02, 0x01,
@@ -429,7 +425,7 @@ mod test {
 
         let mut reader = StreamReader::new(Cursor::new(&data));
 
-        let mesg = read_definition_message(&mut reader).unwrap();
+        let mesg = read_definition_record(&mut reader).unwrap();
 
         assert_eq!(mesg.content.developer_fields.len(), 1);
         assert_eq!(mesg.content.developer_fields[0].num, 0);
@@ -438,7 +434,7 @@ mod test {
     }
 
     #[test]
-    fn test_read_data_message() {
+    fn test_read_data_record() {
         let data: [u8; 10] = [0x00, 0x04, 0x0F, 0x00, 0x01, 0x00, 0x12, 0x07, 0xE6, 0x29];
 
         let definition_mesg = DefinitionRecord {
@@ -475,7 +471,7 @@ mod test {
 
         let mut reader = StreamReader::new(Cursor::new(&data));
 
-        let mesg = read_data_mesg(&mut reader, &definition_mesg).unwrap();
+        let mesg = read_data_record(&mut reader, &definition_mesg).unwrap();
 
         assert_eq!(mesg.fields.len(), 4);
         assert!(mesg.fields.get(&0).is_some());
@@ -535,6 +531,5 @@ mod test {
 
         assert_eq!(fit.data.len(), 6);
         assert_eq!(reader.crc(), 0x9ED3);
-
     }
 }
