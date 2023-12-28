@@ -1,3 +1,4 @@
+use crate::error::Result;
 use crate::{byte_order::ByteOrder, stream_reader::StreamReader};
 use serde::Serialize;
 use std::io::{Read, Seek};
@@ -18,7 +19,7 @@ impl FileHeader {
     }
 }
 
-pub fn read_fit_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FileHeader, anyhow::Error> {
+pub fn read_fit_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FileHeader> {
     let header_size = reader.read_u8()?;
     let mut extra = if header_size > 14 { header_size - 14 } else { 0 };
 
@@ -47,7 +48,7 @@ pub fn read_fit_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<F
     })
 }
 
-pub fn read_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FileHeader, anyhow::Error> {
+pub fn read_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FileHeader> {
     let mut contents = [0; 14];
 
     reader.read_exact(&mut contents[..=11])?;

@@ -1,4 +1,4 @@
-use crate::byte_order::ByteOrder;
+use crate::{byte_order::ByteOrder, error::FitError};
 use std::io::{Read, Seek, SeekFrom};
 
 pub struct StreamReader<T: Read + Seek> {
@@ -39,10 +39,6 @@ impl<T: Read + Seek> StreamReader<T> {
 
         self.reader.read_exact(&mut buf)?;
         let crc = u16::from_le_bytes(buf);
-
-        if crc != self.crc {
-            Err(std::io::Error::other("crc check failed"))?
-        }
 
         Ok(crc)
     }
@@ -186,7 +182,7 @@ impl<T: Read + Seek> StreamReader<T> {
         Ok(result)
     }
 
-    pub(crate) fn read_string_null_term(&mut self, size: usize) -> Result<String, anyhow::Error> {
+    pub(crate) fn read_string_null_term(&mut self, size: usize) -> Result<String, FitError> {
         let buf = self
             .reader
             .by_ref()

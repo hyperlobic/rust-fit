@@ -1,11 +1,11 @@
 use crate::base_type::BaseType;
 use crate::byte_order::ByteOrder;
+use crate::error::{FitError, Result};
 use crate::profile::types::MesgNum;
 use crate::{
     file_header::{read_fit_header, FileHeader},
     stream_reader::StreamReader,
 };
-use anyhow::anyhow;
 use log::debug;
 use serde::Serialize;
 use std::{
@@ -167,12 +167,12 @@ pub struct FitFile {
     pub crc: u16,
 }
 
-fn read_record_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<RecordHeader, anyhow::Error> {
+fn read_record_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<RecordHeader> {
     let header_byte = reader.read_u8()?;
     Ok(RecordHeader(header_byte))
 }
 
-fn read_field_definition<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FieldDefinition, anyhow::Error> {
+fn read_field_definition<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FieldDefinition> {
     let num = reader.read_u8()?;
     let size = reader.read_u8()?;
     let base_type: BaseType = reader.read_u8()?.try_into()?;
@@ -180,7 +180,7 @@ fn read_field_definition<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result
     Ok(FieldDefinition { num, size, base_type })
 }
 
-pub fn read_definition_record<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<DefinitionRecord, anyhow::Error> {
+pub fn read_definition_record<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<DefinitionRecord> {
     let header_byte = reader.read_u8()?;
     debug!(
         "read definition mesg {:x} {:x}",
@@ -190,7 +190,7 @@ pub fn read_definition_record<T: Read + Seek>(reader: &mut StreamReader<T>) -> R
     let header = RecordHeader(header_byte);
 
     if MessageType::Definition != header.msg_type() {
-        Err(anyhow!("not a  definition message"))?
+        Err(FitError::ParseRecord("not a definition record".to_string()))?
     }
 
     let _reserved = reader.read_u8()?;
@@ -235,10 +235,10 @@ pub fn read_definition_record<T: Read + Seek>(reader: &mut StreamReader<T>) -> R
     Ok(mesg)
 }
 
-fn read_array<T>(size: usize, mut read: impl FnMut() -> Result<T, std::io::Error>) -> Result<Vec<T>, anyhow::Error> {
+fn read_array<T>(size: usize, mut read: impl FnMut() -> std::result::Result<T, std::io::Error>) -> Result<Vec<T>> {
     let type_size = mem::size_of::<T>();
     let count = size / type_size;
-    let buf = (0..count).map(|_| read()).collect::<Result<Vec<T>, _>>()?;
+    let buf = (0..count).map(|_| read()).collect::<std::result::Result<Vec<T>, _>>()?;
     Ok(buf)
 }
 
@@ -246,7 +246,7 @@ fn read_data_field<T: Read + Seek>(
     reader: &mut StreamReader<T>,
     field_def: &FieldDefinition,
     byte_order: ByteOrder,
-) -> Result<DataField, anyhow::Error> {
+) -> Result<DataField> {
     use crate::base_type::BaseType::*;
 
     let data_size = field_def.size as usize;
@@ -293,7 +293,7 @@ fn read_data_field<T: Read + Seek>(
 fn read_developer_data_field<T: Read + Seek>(
     reader: &mut StreamReader<T>,
     dev_field_def: &DeveloperFieldDefinition,
-) -> Result<DataField, anyhow::Error> {
+) -> Result<DataField> {
     let mut buf = vec![0u8; dev_field_def.size as usize];
     reader.read_exact(buf.as_mut_slice())?;
     Ok(DataField::ByteArray(buf))
@@ -302,12 +302,17 @@ fn read_developer_data_field<T: Read + Seek>(
 pub fn read_data_record<T: Read + Seek>(
     reader: &mut StreamReader<T>,
     definition: &DefinitionRecord,
-) -> Result<DataMessage, anyhow::Error> {
+) -> Result<DataMessage> {
     let header = read_record_header(reader)?;
-    debug!("read data mesg {:x} {:x}", reader.stream_position()? - 1, header.0);
+
+    debug!(
+        "read data mesg at pos {:x}, header byte {:x}",
+        reader.stream_position()? - 1,
+        header.0
+    );
 
     if !header.is_data() && !header.is_compressed() {
-        Err(anyhow!("not a data message"))?
+        Err(FitError::ParseRecord("not a data record".to_string()))?
     }
 
     let fields = definition
@@ -317,7 +322,7 @@ pub fn read_data_record<T: Read + Seek>(
         .map(|field_def| {
             read_data_field(reader, field_def, definition.content.architecture).map(|field| (field_def.num, field))
         })
-        .collect::<Result<HashMap<u8, DataField>, _>>()?;
+        .collect::<Result<HashMap<u8, DataField>>>()?;
 
     let dev_fields = definition
         .content
@@ -330,7 +335,7 @@ pub fn read_data_record<T: Read + Seek>(
                 data: field,
             })
         })
-        .collect::<Result<Vec<DeveloperDataField>, _>>()?;
+        .collect::<Result<Vec<DeveloperDataField>>>()?;
 
     Ok(DataMessage {
         mesg_num: definition.content.global_msg_number.into(),
@@ -339,7 +344,7 @@ pub fn read_data_record<T: Read + Seek>(
     })
 }
 
-pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitFile, anyhow::Error> {
+pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitFile> {
     let header = read_fit_header(reader)?;
 
     let mut definitions: Vec<DefinitionRecord> = vec![];
@@ -359,17 +364,17 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitFile,
             let data_mesg = read_data_record(reader, definition)?;
             data.push(data_mesg);
         } else {
-            Err(anyhow!(
-                "data mesg without preceding definition pos {:x} {} {}",
-                reader.stream_position().unwrap_or(0),
-                record_header.0,
-                record_header.local_msg_type(),
-            ))?
+            Err(FitError::MissingDefinition {
+                stream_pos: reader.stream_position().unwrap_or(0),
+                local_msg_type: record_header.local_msg_type(),
+            })?
         }
 
         if reader.stream_position()? == header.mesg_size() {
-            // read crc
-            reader.read_crc()?;
+            let crc = reader.read_crc()?;
+            if crc != reader.crc() {
+                Err(FitError::Crc)?
+            }
         }
     }
 

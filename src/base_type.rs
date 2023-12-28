@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use crate::error::FitError;
 use serde::Serialize;
 
 pub struct BaseTypeInfo {
@@ -161,7 +161,7 @@ impl BaseType {
 }
 
 impl TryFrom<u8> for BaseType {
-    type Error = anyhow::Error;
+    type Error = FitError;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         use base_type_nums::*;
@@ -185,7 +185,7 @@ impl TryFrom<u8> for BaseType {
             FLOAT64 => Ok(Float64),
             BYTE => Ok(Byte),
             STRING => Ok(String),
-            _ => Err(anyhow!("unknown type")),
+            unknown => Err(FitError::ParseValue(format!("unknown base type {unknown}").to_string())),
         }
     }
 }
