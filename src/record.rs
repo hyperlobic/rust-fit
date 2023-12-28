@@ -6,6 +6,7 @@ use crate::{
     stream_reader::StreamReader,
 };
 use anyhow::anyhow;
+use log::debug;
 use serde::Serialize;
 use std::{
     collections::HashMap,
@@ -181,7 +182,7 @@ fn read_field_definition<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result
 
 pub fn read_definition_record<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<DefinitionRecord, anyhow::Error> {
     let header_byte = reader.read_u8()?;
-    eprintln!(
+    debug!(
         "read definition mesg {:x} {:x}",
         reader.stream_position()? - 1,
         header_byte
@@ -229,7 +230,7 @@ pub fn read_definition_record<T: Read + Seek>(reader: &mut StreamReader<T>) -> R
         },
     };
 
-    eprintln!("{:?}", mesg);
+    debug!("definition mesg: {:?}", mesg);
 
     Ok(mesg)
 }
@@ -303,7 +304,7 @@ pub fn read_data_record<T: Read + Seek>(
     definition: &DefinitionRecord,
 ) -> Result<DataMessage, anyhow::Error> {
     let header = read_record_header(reader)?;
-    eprintln!("read data mesg {:x} {:x}", reader.stream_position()? - 1, header.0);
+    debug!("read data mesg {:x} {:x}", reader.stream_position()? - 1, header.0);
 
     if !header.is_data() && !header.is_compressed() {
         Err(anyhow!("not a data message"))?
