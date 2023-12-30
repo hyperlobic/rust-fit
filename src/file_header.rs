@@ -48,42 +48,6 @@ pub fn read_fit_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<F
     })
 }
 
-pub fn read_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FileHeader> {
-    let mut contents = [0; 14];
-
-    reader.read_exact(&mut contents[..=11])?;
-
-    let header_size = contents[0];
-    let remaining = header_size - 12;
-
-    if remaining == 2 {
-        reader.read_exact(&mut contents[12..(12 + remaining).into()])?;
-    } else {
-        // discard extra bytes - we don't know what's in here
-        let mut buf = vec![0u8; remaining.into()];
-        reader.read_exact(&mut buf)?;
-    }
-
-    let protocol_version = contents[1];
-    let profile_version = u16::from_le_bytes(contents[2..=3].try_into()?);
-    let data_size = u32::from_le_bytes(contents[4..=7].try_into()?);
-    let data_type = std::str::from_utf8(&contents[8..=11])?.to_string();
-    let crc = if header_size == 14 {
-        u16::from_le_bytes(contents[12..=13].try_into()?)
-    } else {
-        0
-    };
-
-    Ok(FileHeader {
-        header_size,
-        protocol_version,
-        profile_version,
-        data_size,
-        data_type,
-        crc,
-    })
-}
-
 #[cfg(test)]
 mod test {
     use super::*;

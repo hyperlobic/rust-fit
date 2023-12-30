@@ -83,16 +83,16 @@ pub enum MessageType {
 
 #[derive(Serialize, Debug)]
 pub struct FieldDefinition {
-    pub num: u8,
+    pub field_def_num: u8,
     pub size: u8,
     pub base_type: BaseType,
 }
 
 #[derive(Serialize, Debug)]
 pub struct DeveloperFieldDefinition {
-    pub num: u8,
+    pub field_num: u8,
     pub size: u8,
-    pub index: u8,
+    pub dev_data_index: u8,
 }
 
 #[derive(Serialize, Debug)]
@@ -119,52 +119,78 @@ impl DefinitionRecord {
 
 #[derive(Serialize, Debug)]
 pub struct DataMessage {
-    pub mesg_num: MesgNum,
-    pub fields: HashMap<u8, DataField>,
+    pub mesg_num: u16,
+    pub fields: Vec<DataField>,
     pub dev_fields: Vec<DeveloperDataField>,
 }
 
+#[derive(Serialize, Debug)]
+pub struct DataRecord {
+    pub header: RecordHeader,
+    pub content: DataMessage,
+}
+
 #[derive(PartialEq, Debug, Serialize)]
-pub enum DataField {
+pub enum Data {
     Enum(u8),
     EnumArray(Vec<u8>),
-    SInt8(i8),
-    SInt8Array(Vec<i8>),
-    UInt8(u8),
-    UInt8Array(Vec<u8>),
-    SInt16(i16),
-    SInt16Array(Vec<i16>),
-    UInt16(u16),
-    UInt16Array(Vec<u16>),
-    SInt32(i32),
-    SInt32Array(Vec<i32>),
-    UInt32(u32),
-    UInt32Array(Vec<u32>),
+    Sint8(i8),
+    Sint8Array(Vec<i8>),
+    Uint8(u8),
+    Uint8Array(Vec<u8>),
+    Sint16(i16),
+    Sint16Array(Vec<i16>),
+    Uint16(u16),
+    Uint16Array(Vec<u16>),
+    Sint32(i32),
+    Sint32Array(Vec<i32>),
+    Uint32(u32),
+    Uint32Array(Vec<u32>),
     Float32(f32),
     Float32Array(Vec<f32>),
     Float64(f64),
     Float64Array(Vec<f64>),
-    SInt64(i64),
-    SInt64Array(Vec<i64>),
-    UInt64(u64),
-    UInt64Array(Vec<u64>),
+    Sint64(i64),
+    Sint64Array(Vec<i64>),
+    Uint64(u64),
+    Uint64Array(Vec<u64>),
     Byte(u8),
     ByteArray(Vec<u8>),
     String(String),
+}
+
+#[derive(Debug, Serialize, PartialEq)]
+pub struct DataField {
+    pub field_def_num: u8,
+    pub data: Data,
 }
 
 #[derive(Debug, Serialize)]
 pub struct DeveloperDataField {
     pub num: u8,
     pub index: u8,
-    pub data: DataField,
+    pub data: Data,
 }
 
 #[derive(Serialize, Debug)]
 pub struct FitFile {
     pub header: FileHeader,
-    pub data: Vec<DataMessage>,
+    pub data: Vec<FitDataMessage>,
     pub crc: u16,
+}
+
+#[derive(Serialize, Debug)]
+pub struct FitDataMessage {
+    pub mesg_num: MesgNum,
+    pub fields: HashMap<u8, DataField>,
+    pub dev_fields: Vec<DeveloperDataField>,
+}
+
+impl FitDataMessage {
+    ///  Returns the data for the given field definition number
+    pub fn data(&self, field_def_num: u8) -> Option<&Data> {
+        self.fields.get(&field_def_num).map(|x| &x.data)
+    }
 }
 
 fn read_record_header<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<RecordHeader> {
@@ -177,7 +203,11 @@ fn read_field_definition<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result
     let size = reader.read_u8()?;
     let base_type: BaseType = reader.read_u8()?.try_into()?;
 
-    Ok(FieldDefinition { num, size, base_type })
+    Ok(FieldDefinition {
+        field_def_num: num,
+        size,
+        base_type,
+    })
 }
 
 pub fn read_definition_record<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<DefinitionRecord> {
@@ -215,7 +245,11 @@ pub fn read_definition_record<T: Read + Seek>(reader: &mut StreamReader<T>) -> R
             let size = reader.read_u8()?;
             let index = reader.read_u8()?;
 
-            developer_fields.push(DeveloperFieldDefinition { num, size, index });
+            developer_fields.push(DeveloperFieldDefinition {
+                field_num: num,
+                size,
+                dev_data_index: index,
+            });
         }
     }
 
@@ -246,7 +280,7 @@ fn read_data_field<T: Read + Seek>(
     reader: &mut StreamReader<T>,
     field_def: &FieldDefinition,
     byte_order: ByteOrder,
-) -> Result<DataField> {
+) -> Result<Data> {
     use crate::base_type::BaseType::*;
 
     let data_size = field_def.size as usize;
@@ -254,37 +288,31 @@ fn read_data_field<T: Read + Seek>(
     let is_array = field_def.size > base_type.info().size;
 
     let data = match (base_type, is_array) {
-        (Enum, false) => DataField::Enum(reader.read_u8()?),
-        (Enum, true) => DataField::EnumArray(read_array(data_size, || reader.read_u8())?),
-        (UInt8, false) | (UInt8z, false) => DataField::UInt8(reader.read_u8()?),
-        (UInt8, true) | (UInt8z, true) => DataField::UInt8Array(read_array(data_size, || reader.read_u8())?),
-        (SInt8, false) => DataField::SInt8(reader.read_i8()?),
-        (SInt8, true) => DataField::SInt8Array(read_array(data_size, || reader.read_i8())?),
-        (UInt16, false) | (UInt16z, false) => DataField::UInt16(reader.read_u16(byte_order)?),
-        (UInt16, true) | (UInt16z, true) => {
-            DataField::UInt16Array(read_array(data_size, || reader.read_u16(byte_order))?)
-        }
-        (SInt16, false) => DataField::SInt16(reader.read_i16(byte_order)?),
-        (SInt16, true) => DataField::SInt16Array(read_array(data_size, || reader.read_i16(byte_order))?),
-        (SInt32, false) => DataField::SInt32(reader.read_i32(byte_order)?),
-        (SInt32, true) => DataField::SInt32Array(read_array(data_size, || reader.read_i32(byte_order))?),
-        (UInt32, false) | (UInt32z, false) => DataField::UInt32(reader.read_u32(byte_order)?),
-        (UInt32, true) | (UInt32z, true) => {
-            DataField::UInt32Array(read_array(data_size, || reader.read_u32(byte_order))?)
-        }
-        (SInt64, false) => DataField::SInt64(reader.read_i64(byte_order)?),
-        (SInt64, true) => DataField::SInt64Array(read_array(data_size, || reader.read_i64(byte_order))?),
-        (UInt64, false) | (UInt64z, false) => DataField::UInt64(reader.read_u64(byte_order)?),
-        (UInt64, true) | (UInt64z, true) => {
-            DataField::UInt64Array(read_array(data_size, || reader.read_u64(byte_order))?)
-        }
-        (Float32, false) => DataField::Float32(reader.read_f32(byte_order)?),
-        (Float32, true) => DataField::Float32Array(read_array(data_size, || reader.read_f32(byte_order))?),
-        (Float64, false) => DataField::Float64(reader.read_f64(byte_order)?),
-        (Float64, true) => DataField::Float64Array(read_array(data_size, || reader.read_f64(byte_order))?),
-        (Byte, false) => DataField::Byte(reader.read_u8()?),
-        (Byte, true) => DataField::ByteArray(read_array(data_size, || reader.read_u8())?),
-        (String, _) => DataField::String(reader.read_string_null_term(data_size)?),
+        (Enum, false) => Data::Enum(reader.read_u8()?),
+        (Enum, true) => Data::EnumArray(read_array(data_size, || reader.read_u8())?),
+        (Uint8, false) | (Uint8z, false) => Data::Uint8(reader.read_u8()?),
+        (Uint8, true) | (Uint8z, true) => Data::Uint8Array(read_array(data_size, || reader.read_u8())?),
+        (Sint8, false) => Data::Sint8(reader.read_i8()?),
+        (Sint8, true) => Data::Sint8Array(read_array(data_size, || reader.read_i8())?),
+        (Uint16, false) | (Uint16z, false) => Data::Uint16(reader.read_u16(byte_order)?),
+        (Uint16, true) | (Uint16z, true) => Data::Uint16Array(read_array(data_size, || reader.read_u16(byte_order))?),
+        (Sint16, false) => Data::Sint16(reader.read_i16(byte_order)?),
+        (Sint16, true) => Data::Sint16Array(read_array(data_size, || reader.read_i16(byte_order))?),
+        (Sint32, false) => Data::Sint32(reader.read_i32(byte_order)?),
+        (Sint32, true) => Data::Sint32Array(read_array(data_size, || reader.read_i32(byte_order))?),
+        (Uint32, false) | (Uint32z, false) => Data::Uint32(reader.read_u32(byte_order)?),
+        (Uint32, true) | (Uint32z, true) => Data::Uint32Array(read_array(data_size, || reader.read_u32(byte_order))?),
+        (Sint64, false) => Data::Sint64(reader.read_i64(byte_order)?),
+        (Sint64, true) => Data::Sint64Array(read_array(data_size, || reader.read_i64(byte_order))?),
+        (Uint64, false) | (Uint64z, false) => Data::Uint64(reader.read_u64(byte_order)?),
+        (Uint64, true) | (Uint64z, true) => Data::Uint64Array(read_array(data_size, || reader.read_u64(byte_order))?),
+        (Float32, false) => Data::Float32(reader.read_f32(byte_order)?),
+        (Float32, true) => Data::Float32Array(read_array(data_size, || reader.read_f32(byte_order))?),
+        (Float64, false) => Data::Float64(reader.read_f64(byte_order)?),
+        (Float64, true) => Data::Float64Array(read_array(data_size, || reader.read_f64(byte_order))?),
+        (Byte, false) => Data::Byte(reader.read_u8()?),
+        (Byte, true) => Data::ByteArray(read_array(data_size, || reader.read_u8())?),
+        (String, _) => Data::String(reader.read_string_null_term(data_size)?),
     };
 
     Ok(data)
@@ -293,16 +321,17 @@ fn read_data_field<T: Read + Seek>(
 fn read_developer_data_field<T: Read + Seek>(
     reader: &mut StreamReader<T>,
     dev_field_def: &DeveloperFieldDefinition,
-) -> Result<DataField> {
+) -> Result<Data> {
+    //TODO: parse out developer data to correct types
     let mut buf = vec![0u8; dev_field_def.size as usize];
     reader.read_exact(buf.as_mut_slice())?;
-    Ok(DataField::ByteArray(buf))
+    Ok(Data::ByteArray(buf))
 }
 
 pub fn read_data_record<T: Read + Seek>(
     reader: &mut StreamReader<T>,
     definition: &DefinitionRecord,
-) -> Result<DataMessage> {
+) -> Result<DataRecord> {
     let header = read_record_header(reader)?;
 
     debug!(
@@ -320,9 +349,12 @@ pub fn read_data_record<T: Read + Seek>(
         .fields
         .iter()
         .map(|field_def| {
-            read_data_field(reader, field_def, definition.content.architecture).map(|field| (field_def.num, field))
+            read_data_field(reader, field_def, definition.content.architecture).map(|data| DataField {
+                field_def_num: field_def.field_def_num,
+                data,
+            })
         })
-        .collect::<Result<HashMap<u8, DataField>>>()?;
+        .collect::<Result<Vec<DataField>>>()?;
 
     let dev_fields = definition
         .content
@@ -330,39 +362,38 @@ pub fn read_data_record<T: Read + Seek>(
         .iter()
         .map(|dev_field_def| {
             read_developer_data_field(reader, dev_field_def).map(|field| DeveloperDataField {
-                num: dev_field_def.num,
-                index: dev_field_def.index,
+                num: dev_field_def.field_num,
+                index: dev_field_def.dev_data_index,
                 data: field,
             })
         })
         .collect::<Result<Vec<DeveloperDataField>>>()?;
 
-    Ok(DataMessage {
-        mesg_num: definition.content.global_msg_number.into(),
-        fields,
-        dev_fields,
+    Ok(DataRecord {
+        header,
+        content: DataMessage {
+            mesg_num: definition.content.global_msg_number,
+            fields,
+            dev_fields,
+        },
     })
 }
 
 pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitFile> {
     let header = read_fit_header(reader)?;
 
-    let mut definitions: Vec<DefinitionRecord> = vec![];
-    let mut data: Vec<DataMessage> = vec![];
-    let mut curr_definitions: HashMap<u8, DefinitionRecord> = HashMap::new();
+    let mut data: Vec<DataRecord> = vec![];
+    let mut definitions: HashMap<u8, DefinitionRecord> = HashMap::new();
 
     while let Ok(b) = reader.peek_byte() {
         let record_header = RecordHeader(b);
 
         if record_header.is_definition() {
-            let def_mesg = read_definition_record(reader)?;
-            let replaced = curr_definitions.insert(def_mesg.header.local_msg_type(), def_mesg);
-            if let Some(replaced_def) = replaced {
-                definitions.push(replaced_def);
-            }
-        } else if let Some(definition) = curr_definitions.get(&record_header.local_msg_type()) {
-            let data_mesg = read_data_record(reader, definition)?;
-            data.push(data_mesg);
+            let def_record = read_definition_record(reader)?;
+            definitions.insert(def_record.header.local_msg_type(), def_record);
+        } else if let Some(definition) = definitions.get(&record_header.local_msg_type()) {
+            let data_record = read_data_record(reader, definition)?;
+            data.push(data_record);
         } else {
             Err(FitError::MissingDefinition {
                 stream_pos: reader.stream_position().unwrap_or(0),
@@ -378,7 +409,19 @@ pub fn read_fit<T: Read + Seek>(reader: &mut StreamReader<T>) -> Result<FitFile>
         }
     }
 
-    definitions.append(&mut curr_definitions.into_values().collect());
+    let data: Vec<FitDataMessage> = data
+        .into_iter()
+        .map(|data_rec| FitDataMessage {
+            mesg_num: data_rec.content.mesg_num.into(),
+            fields: data_rec
+                .content
+                .fields
+                .into_iter()
+                .map(|x| (x.field_def_num, x))
+                .collect::<HashMap<u8, DataField>>(),
+            dev_fields: data_rec.content.dev_fields,
+        })
+        .collect();
 
     Ok(FitFile {
         header,
@@ -393,7 +436,7 @@ mod test {
     use std::io::Cursor;
 
     fn assert_field_type(field_def: &FieldDefinition, num: u8, base_type: &BaseType) {
-        assert_eq!(field_def.num, num);
+        assert_eq!(field_def.field_def_num, num);
         assert_eq!(field_def.base_type, *base_type);
         assert_eq!(field_def.size, base_type.info().size);
     }
@@ -415,9 +458,9 @@ mod test {
         assert_eq!(mesg.content.fields.len(), 4);
 
         assert_field_type(&mesg.content.fields[0], 0, &BaseType::Enum);
-        assert_field_type(&mesg.content.fields[1], 1, &BaseType::UInt16);
-        assert_field_type(&mesg.content.fields[2], 2, &BaseType::UInt16);
-        assert_field_type(&mesg.content.fields[3], 4, &BaseType::UInt32);
+        assert_field_type(&mesg.content.fields[1], 1, &BaseType::Uint16);
+        assert_field_type(&mesg.content.fields[2], 2, &BaseType::Uint16);
+        assert_field_type(&mesg.content.fields[3], 4, &BaseType::Uint32);
 
         assert_eq!(mesg.content.developer_fields.len(), 0);
     }
@@ -434,9 +477,9 @@ mod test {
         let mesg = read_definition_record(&mut reader).unwrap();
 
         assert_eq!(mesg.content.developer_fields.len(), 1);
-        assert_eq!(mesg.content.developer_fields[0].num, 0);
+        assert_eq!(mesg.content.developer_fields[0].field_num, 0);
         assert_eq!(mesg.content.developer_fields[0].size, 2);
-        assert_eq!(mesg.content.developer_fields[0].index, 1);
+        assert_eq!(mesg.content.developer_fields[0].dev_data_index, 1);
     }
 
     #[test]
@@ -452,23 +495,23 @@ mod test {
                 fields: vec![
                     FieldDefinition {
                         base_type: BaseType::Enum,
-                        num: 0,
+                        field_def_num: 0,
                         size: BaseType::Enum.info().size,
                     },
                     FieldDefinition {
-                        base_type: BaseType::UInt16,
-                        num: 1,
-                        size: BaseType::UInt16.info().size,
+                        base_type: BaseType::Uint16,
+                        field_def_num: 1,
+                        size: BaseType::Uint16.info().size,
                     },
                     FieldDefinition {
-                        base_type: BaseType::UInt16,
-                        num: 2,
-                        size: BaseType::UInt16.info().size,
+                        base_type: BaseType::Uint16,
+                        field_def_num: 2,
+                        size: BaseType::Uint16.info().size,
                     },
                     FieldDefinition {
-                        base_type: BaseType::UInt32,
-                        num: 3,
-                        size: BaseType::UInt32.info().size,
+                        base_type: BaseType::Uint32,
+                        field_def_num: 3,
+                        size: BaseType::Uint32.info().size,
                     },
                 ],
                 developer_fields: vec![],
@@ -479,12 +522,35 @@ mod test {
 
         let mesg = read_data_record(&mut reader, &definition_mesg).unwrap();
 
-        assert_eq!(mesg.fields.len(), 4);
-        assert!(mesg.fields.get(&0).is_some());
-        assert_eq!(mesg.fields[&0], DataField::Enum(0x04));
-        assert_eq!(mesg.fields[&1], DataField::UInt16(0x0F));
-        assert_eq!(mesg.fields[&2], DataField::UInt16(0x01));
-        assert_eq!(mesg.fields[&3], DataField::UInt32(702940946));
+        assert_eq!(mesg.content.fields.len(), 4);
+        assert_eq!(
+            mesg.content.fields[0],
+            DataField {
+                field_def_num: 0,
+                data: Data::Enum(0x04)
+            }
+        );
+        assert_eq!(
+            mesg.content.fields[1],
+            DataField {
+                field_def_num: 1,
+                data: Data::Uint16(0x0F)
+            }
+        );
+        assert_eq!(
+            mesg.content.fields[2],
+            DataField {
+                field_def_num: 2,
+                data: Data::Uint16(0x01)
+            }
+        );
+        assert_eq!(
+            mesg.content.fields[3],
+            DataField {
+                field_def_num: 3,
+                data: Data::Uint32(702940946)
+            }
+        );
     }
 
     #[test]
