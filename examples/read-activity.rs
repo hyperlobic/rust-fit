@@ -1,11 +1,12 @@
 use rust_fit::profile::types::{File as FileType, MesgNum, Sport};
-use rust_fit::record::{read_fit, Data};
-use rust_fit::stream_reader::StreamReader;
+use rust_fit::Reader;
+use rust_fit::Data;
 use std::fs::File;
 use std::io::BufReader;
 use std::{env, error::Error};
 
 const SEMICIRCLES_SCALE: f64 = 11930465.0;
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
 
@@ -14,12 +15,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let file = File::open(&args[1])?;
-    let mut reader = StreamReader::new(BufReader::new(file));
+    let mut reader = Reader::from_reader(BufReader::new(file));
 
-    let fit = read_fit(&mut reader)?;
+    for mesg in reader.data_messages() {
+        let mesg = mesg?;
 
-    for mesg in fit.data {
-        match mesg.mesg_num {
+        match mesg.mesg_num() {
             MesgNum::FileId => {
                 if let Some(Data::Enum(file_field)) = mesg.data(0) {
                     let file = FileType::from(*file_field);

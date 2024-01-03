@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::error::FitError;
+use crate::error::Error;
 
 #[derive(PartialEq, Debug, Serialize, Copy, Clone)]
 pub enum ByteOrder {
@@ -9,13 +9,13 @@ pub enum ByteOrder {
 }
 
 impl TryFrom<u8> for ByteOrder {
-    type Error = FitError;
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(ByteOrder::LitteEndian),
             1 => Ok(ByteOrder::BigEndian),
-            _ => Err(FitError::ParseValue("invalid byte order value".to_string())),
+            _ => Err(Error::ParseValue("invalid byte order value".to_string())),
         }
     }
 }

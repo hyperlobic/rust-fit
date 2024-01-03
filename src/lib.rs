@@ -1,7 +1,13 @@
-pub mod base_type;
+mod base_type;
 mod byte_order;
-pub mod error;
-pub mod file_header;
+mod error;
 pub mod profile;
-pub mod record;
-pub mod stream_reader;
+mod protocol;
+mod reader;
+mod stream_reader;
+
+pub use crate::{
+    error::Error,
+    protocol::{Data, DataField, DataMessage},
+    reader::{DataMessageIterator, Reader},
+};

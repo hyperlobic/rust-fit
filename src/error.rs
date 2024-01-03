@@ -1,43 +1,50 @@
 use std::{array::TryFromSliceError, str::Utf8Error, string::FromUtf8Error};
 use thiserror::Error;
-pub type Result<T> = std::result::Result<T, FitError>;
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Error, Debug)]
-pub enum FitError {
+pub enum Error {
     #[error("io error")]
     Io(std::io::Error),
     #[error("parse value error: {0}")]
     ParseValue(String),
     #[error("parse record error: {0}")]
     ParseRecord(String),
+    #[error("unable to find a record")]
+    ReadRecord(String),
     #[error(
         "definition message not found while reading data record at stream pos {stream_pos}, msg type {local_msg_type}"
     )]
     MissingDefinition { stream_pos: u64, local_msg_type: u8 },
     #[error("CRC check failed")]
     Crc,
+    #[error("invalid file type")]
+    InvalidFile,
+    #[error("end of file")]
+    Eof,
 }
 
-impl From<std::io::Error> for FitError {
+impl From<std::io::Error> for Error {
     fn from(value: std::io::Error) -> Self {
-        FitError::Io(value)
+        Error::Io(value)
     }
 }
 
-impl From<TryFromSliceError> for FitError {
+impl From<TryFromSliceError> for Error {
     fn from(value: TryFromSliceError) -> Self {
-        FitError::ParseValue(format!("error slicing array: {}", value))
+        Error::ParseValue(format!("error slicing array: {}", value))
     }
 }
 
-impl From<Utf8Error> for FitError {
+impl From<Utf8Error> for Error {
     fn from(value: Utf8Error) -> Self {
-        FitError::ParseValue(format!("error parsing UTF-8 string: {}", value).to_string())
+        Error::ParseValue(format!("error parsing UTF-8 string: {}", value).to_string())
     }
 }
 
-impl From<FromUtf8Error> for FitError {
+impl From<FromUtf8Error> for Error {
     fn from(value: FromUtf8Error) -> Self {
-        FitError::ParseValue(format!("error parsing UTF-8 string: {}", value).to_string())
+        Error::ParseValue(format!("error parsing UTF-8 string: {}", value).to_string())
     }
 }

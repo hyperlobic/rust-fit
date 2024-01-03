@@ -1,4 +1,4 @@
-use crate::error::FitError;
+use crate::error::Error;
 use serde::Serialize;
 
 pub struct BaseTypeInfo {
@@ -8,7 +8,7 @@ pub struct BaseTypeInfo {
     pub size: u8,
 }
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub enum BaseType {
     Enum,
     Sint8,
@@ -161,7 +161,7 @@ impl BaseType {
 }
 
 impl TryFrom<u8> for BaseType {
-    type Error = FitError;
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         use base_type_nums::*;
@@ -185,7 +185,7 @@ impl TryFrom<u8> for BaseType {
             FLOAT64 => Ok(Float64),
             BYTE => Ok(Byte),
             STRING => Ok(String),
-            unknown => Err(FitError::ParseValue(format!("unknown base type {unknown}").to_string())),
+            unknown => Err(Error::ParseValue(format!("unknown base type {unknown}").to_string())),
         }
     }
 }
