@@ -51,7 +51,7 @@ pub mod base_type_nums {
 }
 
 impl BaseType {
-    pub fn info(&self) -> &BaseTypeInfo {
+    pub const fn info(&self) -> &BaseTypeInfo {
         use BaseType::*;
         match self {
             Enum => &BaseTypeInfo {
