@@ -21,7 +21,7 @@ impl FileHeader {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct RecordHeader(pub u8);
 
 #[rustfmt::skip]
@@ -61,7 +61,7 @@ impl RecordHeader {
         self.mesg_type() == MessageType::CompressedHeader
     }
 
-    pub fn local_msg_type(&self) -> u8 {
+    pub fn local_mesg_num(&self) -> u8 {
         if self.is_compressed() {
             (self.0 >> 5) & 0b00000011
         } else {
@@ -94,8 +94,8 @@ pub struct DeveloperFieldDefinition {
 #[derive(Debug, Clone)]
 pub struct DefinitionMessage {
     pub architecture: ByteOrder,
-    pub global_mesg_number: u16,
-    pub local_mesg_number: u8,
+    pub global_mesg_num: u16,
+    pub local_mesg_num: u8,
     pub num_fields: u8,
     pub fields: Vec<FieldDefinition>,
     pub developer_fields: Vec<DeveloperFieldDefinition>,
@@ -125,7 +125,7 @@ impl DataMessage {
         self.dev_fields.len() as u8
     }
 
-    ///  Returns the data for the given field definition number
+    /// Returns the data for the given field definition number
     pub fn data(&self, field_def_num: u8) -> Option<&Data> {
         self.fields.get(&field_def_num).map(|x| &x.data)
     }

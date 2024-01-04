@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::mem;
 
-use log::debug;
+use log::{debug, trace};
 
 use crate::base_type::BaseType;
 use crate::byte_order::ByteOrder;
@@ -158,7 +158,7 @@ impl<T: Read> Reader<T> {
         let _reserved = self.reader.read_u8()?;
         let architecture = self.reader.read_u8().map(ByteOrder::try_from)??;
 
-        let global_mesg_number = self.reader.read_u16(architecture)?;
+        let global_mesg_num = self.reader.read_u16(architecture)?;
 
         let num_fields = self.reader.read_u8()?;
         let mut fields: Vec<FieldDefinition> = vec![];
@@ -187,14 +187,14 @@ impl<T: Read> Reader<T> {
 
         let mesg = DefinitionMessage {
             architecture,
-            global_mesg_number,
-            local_mesg_number: record_header.local_msg_type(),
+            global_mesg_num,
+            local_mesg_num: record_header.local_mesg_num(),
             num_fields,
             fields,
             developer_fields,
         };
 
-        debug!("definition mesg: {:?}", mesg);
+        trace!("definition mesg: {:?}", mesg);
 
         Ok(mesg)
     }
@@ -212,9 +212,10 @@ impl<T: Read> Reader<T> {
         definition: &DefinitionMessage,
     ) -> Result<DataMessage> {
         debug!(
-            "read data mesg at pos {:x}, header byte {:x}",
+            "read data mesg at pos {:x}, header byte {:x}, global mesg num {}",
             self.reader.position() - 1,
-            record_header.0
+            record_header.0,
+            definition.global_mesg_num
         );
 
         if !record_header.is_data() && !record_header.is_compressed() {
@@ -251,7 +252,7 @@ impl<T: Read> Reader<T> {
             .collect::<Result<Vec<DeveloperDataField>>>()?;
 
         let data_mesg = DataMessage {
-            mesg_num: definition.global_mesg_number.into(),
+            mesg_num: definition.global_mesg_num.into(),
             fields,
             dev_fields,
         };
@@ -314,7 +315,7 @@ mod test {
         let header = reader.read_record_header().unwrap();
         let mesg = reader.read_definition_record_content(header).unwrap();
 
-        assert_eq!(mesg.local_mesg_number, 0);
+        assert_eq!(mesg.local_mesg_num, 0);
         assert_eq!(mesg.architecture, ByteOrder::LitteEndian);
         assert_eq!(mesg.fields.len(), 4);
 
@@ -350,8 +351,8 @@ mod test {
 
         let definition_mesg = DefinitionMessage {
             architecture: ByteOrder::LitteEndian,
-            global_mesg_number: 0,
-            local_mesg_number: 0,
+            global_mesg_num: 0,
+            local_mesg_num: 0,
             num_fields: 4,
             fields: vec![
                 FieldDefinition {

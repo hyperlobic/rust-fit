@@ -4,10 +4,13 @@ use rust_fit::Data;
 use std::fs::File;
 use std::io::BufReader;
 use std::{env, error::Error};
+use env_logger;
 
 const SEMICIRCLES_SCALE: f64 = 11930465.0;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    env_logger::init();
+
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {

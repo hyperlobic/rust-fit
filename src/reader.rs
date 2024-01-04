@@ -1,5 +1,7 @@
 use std::{collections::HashMap, io::Read};
 
+use log::debug;
+
 use crate::protocol::reader::Reader as ProtocolReader;
 use crate::{
     error::{Error, Result},
@@ -63,14 +65,15 @@ impl<T: Read> Reader<T> {
         while let Ok(record_header) = self.reader.read_record_header() {
             if record_header.is_definition() {
                 let def_record = self.reader.read_definition_record_content(record_header)?;
-                self.definitions.insert(def_record.local_mesg_number, def_record);
-            } else if let Some(definition) = self.definitions.get(&record_header.local_msg_type()) {
+                debug!("found a definition type {}, global type {}", record_header.local_mesg_num(), def_record.global_mesg_num);
+                self.definitions.insert(def_record.local_mesg_num, def_record);
+            } else if let Some(definition) = self.definitions.get(&record_header.local_mesg_num()) {
                 let data_record = self.reader.read_data_record_content(record_header, definition)?;
                 return Ok(Some(data_record));
             } else {
                 Err(Error::MissingDefinition {
                     stream_pos: self.reader.position(),
-                    local_msg_type: record_header.local_msg_type(),
+                    local_msg_type: record_header.local_mesg_num(),
                 })?
             }
         }
@@ -128,7 +131,6 @@ mod test {
         let data: Vec<DataMessage> = reader.data_messages().collect::<Result<Vec<DataMessage>>>().unwrap();
 
         assert_eq!(data.len(), 16);
-        //assert_eq!(reader.crc(), 0xCCB8)
     }
 
     #[test]
@@ -151,6 +153,5 @@ mod test {
         let data: Vec<DataMessage> = reader.data_messages().collect::<Result<Vec<DataMessage>>>().unwrap();
 
         assert_eq!(data.len(), 6);
-        //assert_eq!(reader.crc(), 0x9ED3);
     }
 }
