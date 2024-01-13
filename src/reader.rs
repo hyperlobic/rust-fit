@@ -65,7 +65,11 @@ impl<T: Read> Reader<T> {
         while let Ok(record_header) = self.reader.read_record_header() {
             if record_header.is_definition() {
                 let def_record = self.reader.read_definition_record_content(record_header)?;
-                debug!("found a definition type {}, global type {}", record_header.local_mesg_num(), def_record.global_mesg_num);
+                debug!(
+                    "found a definition type {}, global type {}",
+                    record_header.local_mesg_num(),
+                    def_record.global_mesg_num
+                );
                 self.definitions.insert(def_record.local_mesg_num, def_record);
             } else if let Some(definition) = self.definitions.get(&record_header.local_mesg_num()) {
                 let data_record = self.reader.read_data_record_content(record_header, definition)?;
@@ -107,6 +111,7 @@ mod test {
 
     #[test]
     fn test_read_file() {
+        // activity_truncated.fit
         let data: [u8; 0x115] = [
             0x0E, 0x10, 0x57, 0x08, 0x05, 0x01, 0x00, 0x00, 0x2E, 0x46, 0x49, 0x54, 0x66, 0x21, 0x40, 0x00, 0x00, 0x00,
             0x00, 0x04, 0x00, 0x01, 0x00, 0x01, 0x02, 0x84, 0x02, 0x02, 0x84, 0x04, 0x04, 0x86, 0x00, 0x04, 0x0F, 0x00,
@@ -135,6 +140,7 @@ mod test {
 
     #[test]
     fn test_read_file_with_dev_data() {
+        // DeveloperData.fit
         let data: [u8; 0xB2] = [
             0x0E, 0x20, 0x68, 0x06, 0xA2, 0x00, 0x00, 0x00, 0x2E, 0x46, 0x49, 0x54, 0xBE, 0xD0, 0x40, 0x00, 0x01, 0x00,
             0x00, 0x04, 0x01, 0x02, 0x84, 0x00, 0x01, 0x00, 0x02, 0x02, 0x84, 0x03, 0x04, 0x8C, 0x00, 0x00, 0x0F, 0x04,

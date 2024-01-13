@@ -1,5 +1,5 @@
 pub mod reader;
-use crate::base_type::BaseType;
+use crate::base_type::{BaseType, Value};
 use crate::byte_order::ByteOrder;
 use crate::profile::types::MesgNum;
 use std::collections::HashMap;
@@ -44,7 +44,7 @@ impl RecordHeader {
             MessageType::Data
         }
     }
-    
+
     pub fn has_dev(&self) -> bool {
         self.0 & bits::record_header::MESSAGE_DEV_FLAG_BIT != 0 && !self.is_compressed()
     }
@@ -166,6 +166,35 @@ pub enum Data {
     Byte(u8),
     ByteArray(Vec<u8>),
     String(String),
+}
+
+impl Data {
+    pub fn is_valid(&self, invalid_value: &Value) -> bool {
+        use Data::*;
+        match self {
+            Enum(v) | Uint8(v) | Byte(v) => Value::U8(*v) != *invalid_value,
+            EnumArray(v) | Uint8Array(v) | ByteArray(v) => v.iter().all(|x| Value::U8(*x) != *invalid_value),
+            Sint8(v) => Value::I8(*v) != *invalid_value,
+            Sint8Array(v) => v.iter().all(|x| Value::I8(*x) != *invalid_value),
+            Sint16(v) => Value::I16(*v) != *invalid_value,
+            Sint16Array(v) => v.iter().all(|x| Value::I16(*x) != *invalid_value),
+            Uint16(v) => Value::U16(*v) != *invalid_value,
+            Uint16Array(v) => v.iter().all(|x| Value::U16(*x) != *invalid_value),
+            Sint32(v) => Value::I32(*v) != *invalid_value,
+            Sint32Array(v) => v.iter().all(|x| Value::I32(*x) != *invalid_value),
+            Uint32(v) => Value::U32(*v) != *invalid_value,
+            Uint32Array(v) => v.iter().all(|x| Value::U32(*x) != *invalid_value),
+            Float32(v) => Value::F32(*v) != *invalid_value,
+            Float32Array(v) => v.iter().all(|x| Value::F32(*x) != *invalid_value),
+            Float64(v) => Value::F64(*v) != *invalid_value,
+            Float64Array(v) => v.iter().all(|x| Value::F64(*x) != *invalid_value),
+            Sint64(v) => Value::I64(*v) != *invalid_value,
+            Sint64Array(v) => v.iter().all(|x| Value::I64(*x) != *invalid_value),
+            Uint64(v) => Value::U64(*v) != *invalid_value,
+            Uint64Array(v) => v.iter().all(|x| Value::U64(*x) != *invalid_value),
+            String(_) => true,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

@@ -10,7 +10,7 @@ use crate::error::{Error, Result};
 use crate::protocol::{DataField, DeveloperDataField, DeveloperFieldDefinition, FileHeader, MessageType};
 use crate::stream_reader::StreamReader;
 
-use super::{RecordHeader, Data, DataMessage, DefinitionMessage, FieldDefinition};
+use super::{Data, DataMessage, DefinitionMessage, FieldDefinition, RecordHeader};
 
 pub struct Reader<T> {
     reader: StreamReader<T>,
@@ -225,17 +225,25 @@ impl<T: Read> Reader<T> {
         let fields = definition
             .fields
             .iter()
-            .map(|field_def| {
-                self.read_data_field(field_def, definition.architecture).map(|data| {
-                    (
-                        field_def.field_def_num,
-                        DataField {
-                            field_def_num: field_def.field_def_num,
-                            data,
-                        },
-                    )
-                })
+            .filter_map(|field_def| {
+                let result = self
+                    .read_data_field(field_def, definition.architecture)
+                    .map(|data| DataField {
+                        field_def_num: field_def.field_def_num,
+                        data,
+                    });
+
+                if let Ok(data_field) = &result {
+                    if data_field.data.is_valid(&field_def.base_type.info().invalid_value) {
+                        Some(result)
+                    } else {
+                        None
+                    }
+                } else {
+                    Some(result)
+                }
             })
+            .map(|result| result.map(|data_field| (data_field.field_def_num, data_field)))
             .collect::<Result<HashMap<u8, DataField>>>()?;
 
         let dev_fields = definition
@@ -334,7 +342,7 @@ mod test {
             0x86, 0x01, 0x00, 0x02, 0x01,
         ];
 
-        let mut reader = Reader::new((Cursor::new(&data)));
+        let mut reader = Reader::new(Cursor::new(&data));
 
         let header = reader.read_record_header().unwrap();
         let mesg = reader.read_definition_record_content(header).unwrap();
@@ -345,15 +353,12 @@ mod test {
         assert_eq!(mesg.developer_fields[0].dev_data_index, 1);
     }
 
-    #[test]
-    fn test_read_data_record() {
-        let data: [u8; 10] = [0x00, 0x04, 0x0F, 0x00, 0x01, 0x00, 0x12, 0x07, 0xE6, 0x29];
-
-        let definition_mesg = DefinitionMessage {
+    fn mock_defn_mesg() -> DefinitionMessage {
+        DefinitionMessage {
             architecture: ByteOrder::LitteEndian,
             global_mesg_num: 0,
             local_mesg_num: 0,
-            num_fields: 4,
+            num_fields: 4,  
             fields: vec![
                 FieldDefinition {
                     base_type: BaseType::Enum,
@@ -377,17 +382,38 @@ mod test {
                 },
             ],
             developer_fields: vec![],
-        };
+        }
+    }
+
+    #[test]
+    fn test_read_data_record() {
+        let data: [u8; 10] = [0x00, 0x04, 0x0F, 0x00, 0x01, 0x00, 0x12, 0x07, 0xE6, 0x29];
 
         let mut reader = Reader::new(Cursor::new(&data));
         let header = reader.read_record_header().unwrap();
 
-        let mesg = reader.read_data_record_content(header, &definition_mesg).unwrap();
+        let mesg = reader.read_data_record_content(header, &mock_defn_mesg()).unwrap();
 
         assert_eq!(mesg.fields().count(), 4);
         assert_eq!(mesg.data(0), Some(&Data::Enum(0x04)));
         assert_eq!(mesg.data(1), Some(&Data::Uint16(0x0F)));
         assert_eq!(mesg.data(2), Some(&Data::Uint16(0x01)));
         assert_eq!(mesg.data(3), Some(&Data::Uint32(702940946)));
+    }
+
+    #[test]
+    fn test_read_data_record_with_invalid_fields() {
+        let data: [u8; 10] = [0x00, 0xFF, 0x0F, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+
+        let mut reader = Reader::new(Cursor::new(&data));
+        let header = reader.read_record_header().unwrap();
+
+        let mesg = reader.read_data_record_content(header, &mock_defn_mesg()).unwrap();
+
+        assert_eq!(mesg.fields().count(), 1);
+        assert_eq!(mesg.data(0), None);
+        assert_eq!(mesg.data(1), Some(&Data::Uint16(0x0F)));
+        assert_eq!(mesg.data(2), None);
+        assert_eq!(mesg.data(3), None);
     }
 }
